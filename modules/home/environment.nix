@@ -1,5 +1,5 @@
 { pkgs, ... }: {
-  enviroment = {
+  environment = {
     variables = {
       GTK_THEME = "Dracula";
       XCURSOR_THEME = "catppuccin-mocha-mauve-cursors";

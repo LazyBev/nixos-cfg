@@ -87,23 +87,23 @@ in {
         programs.vesktop = {
           enable = true;
           vencord.settings =
-            (builtins.fromJSON (builtins.readFile ../configs/apps/vesktop/settings.json)).settings;
+            (builtins.fromJSON (builtins.readFile ../../configs/apps/vesktop/settings.json)).settings;
         };
 
-        xdg.configFile."dunst/dunstrc".source                         = ../configs/apps/dunst/dunstrc;
-        xdg.configFile."fuzzel/fuzzel.ini".source                     = ../configs/apps/fuzzel/fuzzel.ini;
-        xdg.configFile."yazi/theme.toml".source                       = ../configs/apps/yazi/theme.toml;
-        xdg.configFile."yazi/yazi.toml".source                        = ../configs/apps/yazi/yazi.toml;
-        xdg.configFile."yazi/keymap.toml".source                      = ../configs/apps/yazi/keymap.toml;
-        xdg.configFile."yazi/flavors/dracula.yazi/flavor.toml".source = ../configs/apps/yazi/flavors/dracula.yazi/flavor.toml;
-        xdg.configFile."yazi/flavors/dracula.yazi/tmtheme.xml".source = ../configs/apps/yazi/flavors/dracula.yazi/tmtheme.xml;
-        xdg.configFile."qutebrowser/config.py".source                 = ../configs/apps/qutebrowser/config.py;
-        xdg.configFile."gtklock/style.css".source                     = ../configs/apps/gtklock/style.css;
+        xdg.configFile."dunst/dunstrc".source                         = ../../configs/apps/dunst/dunstrc;
+        xdg.configFile."fuzzel/fuzzel.ini".source                     = ../../configs/apps/fuzzel/fuzzel.ini;
+        xdg.configFile."yazi/theme.toml".source                       = ../../configs/apps/yazi/theme.toml;
+        xdg.configFile."yazi/yazi.toml".source                        = ../../configs/apps/yazi/yazi.toml;
+        xdg.configFile."yazi/keymap.toml".source                      = ../../configs/apps/yazi/keymap.toml;
+        xdg.configFile."yazi/flavors/dracula.yazi/flavor.toml".source = ../../configs/apps/yazi/flavors/dracula.yazi/flavor.toml;
+        xdg.configFile."yazi/flavors/dracula.yazi/tmtheme.xml".source = ../../configs/apps/yazi/flavors/dracula.yazi/tmtheme.xml;
+        xdg.configFile."qutebrowser/config.py".source                 = ../../configs/apps/qutebrowser/config.py;
+        xdg.configFile."gtklock/style.css".source                     = ../../configs/apps/gtklock/style.css;
         xdg.configFile."xdg-desktop-portal/portals.conf".text         = ''[preferred] default=gtk'';
         
 
         home.file."Pictures" = {
-          source = ../configs/desktop/Pictures;
+          source = ../../configs/desktop/Pictures;
           recursive = true;
         };
       };

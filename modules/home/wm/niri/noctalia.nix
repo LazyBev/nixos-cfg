@@ -4,7 +4,7 @@
       inherit pkgs;
       settings = 
         (builtins.fromJSON
-          (builtins.readFile ../../configs/apps/noctalia/noctalia.json)).settings;
+          (builtins.readFile ../../../../configs/apps/noctalia/noctalia.json)).settings;
     };
   };
 }
