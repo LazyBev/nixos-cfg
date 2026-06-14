@@ -1,0 +1,39 @@
+{ pkgs, ... }: {
+  hjem.users.yari.files = {
+    ".config/hypr/hyprland.lua".source = ../../configs/hypr/hyprland.lua;
+    ".config/alacritty/alacritty.toml".source = ../../configs/alacritty/alacritty.toml;
+    ".config/dunst/dunstrc".source = ../../configs/dunst/dunstrc;
+    ".config/fcitx5/config".source = ../../configs/fcitx5/config;
+    ".config/fcitx5/profile".source = ../../configs/fcitx5/profile;
+    ".config/fcitx5/conf/chttrans.conf".source = ../../configs/fcitx5/conf/chttrans.conf;
+    ".config/fcitx5/conf/keyboard.conf".source = ../../configs/fcitx5/conf/keyboard.conf;
+    ".config/fcitx5/conf/notifications.conf".source = ../../configs/fcitx5/conf/notifications.conf;
+    ".config/fcitx5/conf/punctuation.conf".source = ../../configs/fcitx5/conf/punctuation.conf;
+    ".config/fcitx5/conf/spell.conf".source = ../../configs/fcitx5/conf/spell.conf;
+    ".config/fuzzel/fuzzel.ini".source = ../../configs/fuzzel/fuzzel.ini;
+    ".config/librewolf/userChrome.css".source = ../../configs/librewolf/userChrome.css;
+    ".config/librewolf/sidebery-sidebar.css".source = ../../configs/librewolf/sidebery-sidebar.css;
+    ".config/qutebrowser/config.py".source = ../../configs/qutebrowser/config.py;
+    ".config/rmpc/config.ron".source = ../../configs/rmpc/config.ron;
+    ".config/vesktop/settings.json".source = ../../configs/vesktop/settings.json;
+    ".config/yazi/yazi.toml".source = ../../configs/yazi/yazi.toml;
+    ".config/yazi/keymap.toml".source = ../../configs/yazi/keymap.toml;
+    ".config/yazi/theme.toml".source = ../../configs/yazi/theme.toml;
+    ".config/zellij/config.kdl".source = ../../configs/zellij/config.kdl;
+    ".config/bat/config".text = "--theme=ansi";
+    ".config/dunst/icons".source = ../../configs/dunst/icons;
+    ".config/yazi/flavors/dracula.yazi/flavor.toml".source = ../../configs/yazi/flavors/dracula.yazi/flavor.toml;
+    ".config/yazi/flavors/dracula.yazi/tmtheme.xml".source = ../../configs/yazi/flavors/dracula.yazi/tmtheme.xml;
+
+    "Pictures/BURBER.png".source = ../../configs/Pictures/BURBER.png;
+    "Pictures/YELLOW_BURBER.png".source = ../../configs/Pictures/YELLOW_BURBER.png;
+    "Pictures/diinki.png".source = ../../configs/Pictures/diinki.png;
+    "Pictures/higuruma.jpg".source = ../../configs/Pictures/higuruma.jpg;
+    "Pictures/jodio.jpg".source = ../../configs/Pictures/jodio.jpg;
+    "Pictures/manhattan.jpg".source = ../../configs/Pictures/manhattan.jpg;
+    "Pictures/manhattan2.jpg".source = ../../configs/Pictures/manhattan2.jpg;
+    "Pictures/matikanefuku.png".source = ../../configs/Pictures/matikanefuku.png;
+    "Pictures/todo.png".source = ../../configs/Pictures/todo.png;
+    "Pictures/yellow_burber_wall1.png".source = ../../configs/Pictures/yellow_burber_wall1.png;
+  };
+}
