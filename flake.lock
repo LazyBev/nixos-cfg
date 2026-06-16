@@ -3,11 +3,11 @@
     "beaker-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1780436704,
-        "narHash": "sha256-3aMH1YblnpiXKdkQVMRLmMZ5/8G7vB4HAfLg7+izyHg=",
+        "lastModified": 1775244490,
+        "narHash": "sha256-4TJv7X6D0l4rEbTRKf47gU43L8G5uJgxxtsqMkVixQY=",
         "ref": "refs/heads/master",
-        "rev": "360d6271e1a20d128430e52637d5d35f4c706ca5",
-        "revCount": 34,
+        "rev": "3fab89ecf8f4c664477a82add660d28db87357b4",
+        "revCount": 27,
         "shallow": false,
         "type": "git",
         "url": "https://git.bwaaa.monster/beaker"
@@ -204,6 +204,22 @@
         "type": "github"
       }
     },
+    "nixpkgs_2": {
+      "locked": {
+        "lastModified": 1773734432,
+        "narHash": "sha256-IF5ppUWh6gHGHYDbtVUyhwy/i7D261P7fWD1bPefOsw=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "cda48547b432e8d3b18b4180ba07473762ec8558",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nvf": {
       "inputs": {
         "flake-compat": "flake-compat",
@@ -232,9 +248,7 @@
     "omnisearch": {
       "inputs": {
         "beaker-src": "beaker-src",
-        "nixpkgs": [
-          "nixpkgs"
-        ]
+        "nixpkgs": "nixpkgs_2"
       },
       "locked": {
         "lastModified": 1780851762,

@@ -41,7 +41,7 @@
     ".config/librewolf/librewolf/rlubfwj2.default/user.js".text = builtins.readFile ../../configs/librewolf/user.js;
     ".config/qutebrowser/config.py".text = builtins.readFile ../../configs/qutebrowser/config.py;
     ".config/rmpc/config.ron".text = builtins.readFile ../../configs/rmpc/config.ron;
-    ".config/vesktop/settings/settings.json".text = builtins.readFile ../../configs/vesktop/settings.json;
+    ".config/vesktop/settings.json".text = builtins.readFile ../../configs/vesktop/settings.json;
     ".config/yazi/yazi.toml".text = builtins.readFile ../../configs/yazi/yazi.toml;
     ".config/yazi/keymap.toml".text = builtins.readFile ../../configs/yazi/keymap.toml;
     ".config/yazi/theme.toml".text = builtins.readFile ../../configs/yazi/theme.toml;
