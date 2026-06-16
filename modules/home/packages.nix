@@ -81,8 +81,8 @@ in {
     alacritty
     btop
     bitwarden-desktop
+    bemenu
     dunst
-    fuzzel
     waypaper
     mpv
     pavucontrol
@@ -115,12 +115,15 @@ in {
     swaybg
     unar
     zathura
-    wmenu
+
     opencode
     keepassxc
     proton-vpn
     proton-vpn-cli
     protonmail-desktop
     gpu-screen-recorder
+    lynis
+    motrix
+    qbittorrent
   ];
 }

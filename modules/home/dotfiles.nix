@@ -14,7 +14,6 @@
     ".config/fcitx5/conf/notifications.conf".source = ../../configs/fcitx5/conf/notifications.conf;
     ".config/fcitx5/conf/punctuation.conf".source = ../../configs/fcitx5/conf/punctuation.conf;
     ".config/fcitx5/conf/spell.conf".source = ../../configs/fcitx5/conf/spell.conf;
-    ".config/fuzzel/fuzzel.ini".source = ../../configs/fuzzel/fuzzel.ini;
     ".config/librewolf/librewolf/rlubfwj2.default/chrome/userChrome.css".source = ../../configs/librewolf/userChrome.css;
     ".config/librewolf/sidebery-sidebar.css".source = ../../configs/librewolf/sidebery-sidebar.css;
     ".config/librewolf/librewolf/rlubfwj2.default/user.js".source = ../../configs/librewolf/user.js;
@@ -41,6 +40,30 @@
       gtk-cursor-theme-name=catppuccin-mocha-mauve-cursors
       gtk-cursor-theme-size=24
       gtk-application-prefer-dark-theme=1
+    '';
+    ".config/fetch/config".text = ''
+      os
+      host
+      kernel
+      uptime
+      packages
+      shell
+      wm
+      theme
+      icons
+      font
+      cpu
+      gpu
+      memory
+      swap
+      disk
+      ip
+      battery
+      colors
+      label_color=magenta
+      separator=─
+      spin=xy
+      speed=1.0
     '';
     ".config/Kvantum/kvantum.kvconfig".text = ''
       [General]
