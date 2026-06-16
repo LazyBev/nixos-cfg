@@ -1,7 +1,7 @@
 { pkgs, ... }: {
   hjem.users.yari.files = {
     ".config/niri/config.kdl".text = builtins.readFile ../../configs/niri/config.kdl;
-    ".config/hypr/hyprland.lua".text = builtins.readFile ../../configs/hypr/hyprland.lua;
+
     ".config/alacritty/alacritty.toml".text = builtins.readFile ../../configs/alacritty/alacritty.toml;
     ".config/dunst/dunstrc".text = builtins.readFile ../../configs/dunst/dunstrc;
     ".config/fcitx5/config".text = builtins.readFile ../../configs/fcitx5/config;

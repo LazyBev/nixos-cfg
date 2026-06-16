@@ -1,9 +1,19 @@
 { lib, ... }: {
   options.vars = {
-    username = lib.mkOption {
+    name = lib.mkOption {
       type = lib.types.str;
       default = "yari";
+      description = "Short name/alias";
+    };
+    username = lib.mkOption {
+      type = lib.types.str;
+      default = "LazyBev";
       description = "Primary username";
+    };
+    email = lib.mkOption {
+      type = lib.types.str;
+      default = "lazy25yari@proton.me";
+      description = "Email address";
     };
     hostname = lib.mkOption {
       type = lib.types.str;

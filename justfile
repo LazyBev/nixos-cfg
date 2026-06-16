@@ -5,7 +5,7 @@ flakeupd:
 	nix flake update
 
 upgrade host:
-	doas nixos-rebuild switch --flake .#{{host}} -j$(( $(nproc) / 2 ))
+	nh os switch ".#{{host}}"
 
 gc:
 	doas nix-collect-garbage --delete-older-than 30d
@@ -18,7 +18,7 @@ clean:
 	nix-collect-garbage -d
 
 sysupd host:
-	nix flake update && doas nixos-rebuild switch --flake .#{{host}} -j$(( $(nproc) / 2 ))
+	nix flake update && nh os switch ".#{{host}}"
 
 gitwho name email:
 	git config --global user.name "{{name}}"
@@ -28,6 +28,10 @@ gp msg:
 	git add .
 	git commit -m "{{msg}}"
 	git push
+
+copykern target:
+	path=$$(nix build github:xddxdd/nix-cachyos-kernel/release#cachyos-bore --no-link --print-out-paths) && \
+	nix copy --to "ssh://yari@{{target}}" $$path
 
 install host:
 	cfdisk /dev/nvme0n1 && \

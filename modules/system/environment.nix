@@ -5,8 +5,6 @@ in {
     GTK_THEME = vars.gtkTheme;
     XCURSOR_THEME = vars.cursorTheme;
     XCURSOR_SIZE = "${toString vars.cursorSize}";
-    QT_STYLE_OVERRIDE = "kvantum";
-    QT_QPA_PLATFORMTHEME = "qt5ct";
     EDITOR = "nvim";
     VISUAL = "nvim";
     TERMINAL = "alacritty";
@@ -20,5 +18,7 @@ in {
     XMODIFIERS = "@im=fcitx";
     SDL_IM_MODULE = "fcitx";
     GLFW_IM_MODULE = "ibus";
+    XCURSOR_THEME = vars.cursorTheme;
+    XCURSOR_SIZE = "${toString vars.cursorSize}";
   };
 }

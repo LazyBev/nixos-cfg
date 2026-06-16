@@ -22,11 +22,15 @@
     omnisearch = {
       url = "git+https://git.bwaaa.monster/omnisearch";
     };
+    nix-cachyos-kernel = {
+      url = "github:xddxdd/nix-cachyos-kernel/release";
+    };
   };
 
-  outputs = { self, nixpkgs, niri-nix, hjem, nvf, nix-flatpak, omnisearch }: let
+  outputs = { self, nixpkgs, niri-nix, hjem, nvf, nix-flatpak, omnisearch, nix-cachyos-kernel }: let
     mkSystem = host: extraModules: nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
+      specialArgs = { inherit nix-cachyos-kernel omnisearch; };
       modules = [
         niri-nix.nixosModules.default
         hjem.nixosModules.default

@@ -14,4 +14,7 @@
       ++ lib.flatten (map (d: collectNixFiles (dir + "/${d}")) directories);
 in {
   imports = collectNixFiles ./.;
+
+  nixpkgs.config.allowUnfree = true;
+  nixpkgs.config.allowUnfreePredicate = _: true;
 }

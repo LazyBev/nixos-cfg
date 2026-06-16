@@ -1,6 +1,9 @@
-{ ... }: {
+{ config, lib, ... }: {
   networking.networkmanager.enable = true;
-  networking.hostName = "gentuwu";
+  networking.hostName = config.vars.hostname;
   networking.hostId = "c0ffee42";
-  networking.firewall.enable = false;
+  networking.firewall.enable = true;
+  networking.firewall.allowedTCPPorts = [ 8087 ];
+  networking.nftables.enable = false;
+  networking.firewall.backend = "iptables";
 }

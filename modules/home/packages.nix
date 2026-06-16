@@ -80,6 +80,7 @@ in {
   hjem.users.yari.packages = with pkgs; [
     alacritty
     btop
+    bitwarden-desktop
     dunst
     fuzzel
     hyprlock
@@ -90,6 +91,7 @@ in {
     playerctl
     qutebrowser
     librewolf-wrapped
+    signal-desktop
     rmpc
     thunar
     vesktop

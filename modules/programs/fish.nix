@@ -18,11 +18,29 @@
 
       function sysupd
         nix flake update
-        doas nixos-rebuild switch --flake .#"$argv"
+        nh os switch ".#$argv"
       end
 
       function update
-        doas nixos-rebuild switch --flake .#"$argv"
+        nh os switch ".#$argv"
+      end
+
+      function clrcache
+        set dirs \
+          ~/.cache \
+          ~/.thumbnails \
+          ~/.local/share/Trash \
+          /tmp
+
+        for d in $dirs
+          if test -d "$d"
+            rm -rf "$d/"* "$d/".*
+          end
+        end
+
+        doas nix-collect-garbage -d
+        doas nix-collect-garbage --delete-old
+        nix store optimise
       end
     '';
     shellAliases = {
