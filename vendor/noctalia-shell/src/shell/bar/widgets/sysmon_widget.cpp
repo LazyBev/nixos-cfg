@@ -492,8 +492,30 @@ void SysmonWidget::doUpdate(Renderer& renderer) {
     }
   }
 
-  if (auto* rootNode = root(); rootNode != nullptr) {
-    static_cast<InputArea*>(rootNode)->setTooltip(std::vector<TooltipRow>{{statDisplayName(m_stat), value}});
+  if (auto* rootNode = root(); rootNode != nullptr && m_monitor != nullptr) {
+    const auto stats = m_monitor->latest();
+    std::vector<TooltipRow> rows;
+    rows.push_back({"CPU", std::format("{:.0f}%", stats.cpuUsagePercent)});
+    if (stats.cpuTempC.has_value()) {
+      rows.push_back({"CPU Temp", std::format("{:.0f}°C", *stats.cpuTempC)});
+    }
+    rows.push_back({"RAM", std::format("{:.0f}% ({} / {})", stats.ramUsagePercent, FormatUnits::formatBinaryMib(stats.ramUsedMb), FormatUnits::formatBinaryMib(stats.ramTotalMb))});
+    if (stats.gpuUsagePercent.has_value()) {
+      rows.push_back({"GPU", std::format("{:.0f}%", *stats.gpuUsagePercent)});
+    }
+    if (stats.gpuTempC.has_value()) {
+      rows.push_back({"GPU Temp", std::format("{:.0f}°C", *stats.gpuTempC)});
+    }
+    if (stats.gpuVramUsedBytes.has_value() && stats.gpuVramTotalBytes.has_value() && *stats.gpuVramTotalBytes > 0) {
+      rows.push_back({"VRAM", std::format("{:.0f}%", 100.0 * static_cast<double>(*stats.gpuVramUsedBytes) / static_cast<double>(*stats.gpuVramTotalBytes))});
+    }
+    if (stats.swapTotalMb > 0) {
+      rows.push_back({"Swap", std::format("{:.0f}%", 100.0 * static_cast<double>(stats.swapUsedMb) / static_cast<double>(stats.swapTotalMb))});
+    }
+    rows.push_back({"↓", FormatUnits::formatDecimalBytesPerSecond(m_monitor->netRxBytesPerSec(m_networkInterface))});
+    rows.push_back({"↑", FormatUnits::formatDecimalBytesPerSecond(m_monitor->netTxBytesPerSec(m_networkInterface))});
+    rows.push_back({"Load", std::format("{:.1f} {:.1f} {:.1f}", stats.loadAvg1, stats.loadAvg5, stats.loadAvg15)});
+    static_cast<InputArea*>(rootNode)->setTooltip(std::move(rows));
   }
 
   if (m_displayMode == SysmonDisplayMode::Gauge) {
