@@ -110,6 +110,7 @@ in {
     opencode
     keepassxc
     proton-vpn
+    proton-vpn-cli
     protonmail-desktop
   ];
 }

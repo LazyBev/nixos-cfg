@@ -16,7 +16,7 @@ in {
           gtk-theme = vars.gtkTheme;
           icon-theme = vars.iconTheme;
           cursor-theme = vars.cursorTheme;
-          cursor-size = vars.cursorSize;
+          cursor-size = mkInt32 vars.cursorSize;
           font-name = "Pragmasevka Nerd Font 10";
         };
       };

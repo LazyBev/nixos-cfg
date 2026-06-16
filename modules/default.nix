@@ -15,6 +15,12 @@
 in {
   imports = collectNixFiles ./.;
 
-  nixpkgs.config.allowUnfree = true;
-  nixpkgs.config.allowUnfreePredicate = _: true;
+  nixpkgs.config = {
+    allowUnfree = true;
+    allowUnfreePredicate = _: true;
+    permittedInsecurePackages = [
+      "electron-39.8.10"
+    ];
+    joypixels.acceptLicense = true;
+  };
 }

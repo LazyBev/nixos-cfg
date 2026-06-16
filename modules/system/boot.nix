@@ -1,4 +1,4 @@
-{ pkgs, nix-cachyos-kernel, ... }: {
+{ pkgs, ... }: {
   boot.loader.systemd-boot.configurationLimit = null;
   boot.loader.systemd-boot.enable = true;
   boot.loader.timeout = 5;
@@ -6,7 +6,7 @@
   boot.loader.grub.enable = false;
   boot.loader.limine.enable = false;
   boot.loader.efi.canTouchEfiVariables = true;
-  boot.kernelPackages = nix-cachyos-kernel.packages.x86_64-linux.cachyos-bore;
+  boot.kernelPackages = pkgs.cachyosKernels.linuxPackages-cachyos-bore;
   boot.kernelParams = [
     "quiet"
     "systemd.show_status=error"
