@@ -83,8 +83,6 @@ in {
     bitwarden-desktop
     dunst
     fuzzel
-    hyprlock
-    hyprpaper
     waypaper
     mpv
     pavucontrol
@@ -104,13 +102,25 @@ in {
     gh
     just
     tree
+    zoxide
     catppuccin-cursors
-    waybar
+    curl
+    devenv
+    eza
+    gtklock
+    imv
+    python3
+    noctalia
+    ripgrep
+    swaybg
+    unar
+    zathura
     wmenu
     opencode
     keepassxc
     proton-vpn
     proton-vpn-cli
     protonmail-desktop
+    gpu-screen-recorder
   ];
 }

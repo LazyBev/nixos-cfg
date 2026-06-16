@@ -2,6 +2,9 @@
   hjem.users.yari.files = {
     ".config/niri/config.kdl".source = ../../configs/niri/config.kdl;
 
+    ".config/noctalia/config.toml".source = ../../configs/noctalia/config.toml;
+    ".config/noctalia/nixos-logo.png".source = ../../configs/noctalia/nixos-logo.png;
+
     ".config/alacritty/alacritty.toml".source = ../../configs/alacritty/alacritty.toml;
     ".config/dunst/dunstrc".source = ../../configs/dunst/dunstrc;
     ".config/fcitx5/config".source = ../../configs/fcitx5/config;
@@ -11,30 +14,6 @@
     ".config/fcitx5/conf/notifications.conf".source = ../../configs/fcitx5/conf/notifications.conf;
     ".config/fcitx5/conf/punctuation.conf".source = ../../configs/fcitx5/conf/punctuation.conf;
     ".config/fcitx5/conf/spell.conf".source = ../../configs/fcitx5/conf/spell.conf;
-    ".config/waybar/config.jsonc".source = ../../configs/waybar/config.jsonc;
-    ".config/waybar/style.css".source = ../../configs/waybar/style.css;
-    ".config/waybar/colors.css".source = ../../configs/waybar/colors.css;
-    ".config/waybar/wittr.sh" = {
-      source = ../../configs/waybar/wittr.sh;
-      executable = true;
-    };
-    ".config/waybar/custom_modules/media/media-now-playing.sh" = {
-      source = ../../configs/waybar/custom_modules/media/media-now-playing.sh;
-      executable = true;
-    };
-    ".config/waybar/custom_modules/media/media-time.sh" = {
-      source = ../../configs/waybar/custom_modules/media/media-time.sh;
-      executable = true;
-    };
-    ".config/waybar/custom_modules/cava/config".source = ../../configs/waybar/custom_modules/cava/config;
-    ".config/waybar/custom_modules/cava/visualizer.sh" = {
-      source = ../../configs/waybar/custom_modules/cava/visualizer.sh;
-      executable = true;
-    };
-    ".config/waybar/custom_modules/logo.sh" = {
-      source = ../../configs/waybar/custom_modules/logo.sh;
-      executable = true;
-    };
     ".config/fuzzel/fuzzel.ini".source = ../../configs/fuzzel/fuzzel.ini;
     ".config/librewolf/librewolf/rlubfwj2.default/chrome/userChrome.css".source = ../../configs/librewolf/userChrome.css;
     ".config/librewolf/sidebery-sidebar.css".source = ../../configs/librewolf/sidebery-sidebar.css;

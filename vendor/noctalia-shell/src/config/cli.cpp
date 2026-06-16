@@ -1,0 +1,469 @@
+#include "config/cli.h"
+
+#include "config/config_service.h"
+#include "config/config_validate.h"
+#include "core/log.h"
+#include "core/toml.h" // IWYU pragma: keep
+#include "util/file_utils.h"
+#include "util/string_utils.h"
+
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <filesystem>
+#include <fstream>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <unistd.h>
+
+namespace noctalia::config {
+  namespace {
+
+    constexpr const char* kHelpText =
+        "Usage: noctalia config <command> [options]\n"
+        "\n"
+        "Commands:\n"
+        "  validate [path]\n"
+        "      Check config validity: TOML syntax, unknown/misspelled settings, and bad\n"
+        "      values. Defaults to the active config dir + state settings.toml. A directory\n"
+        "      validates its *.toml files; a file validates only that file. Exit 1 on error.\n"
+        "\n"
+        "  export [merged|full]\n"
+        "      Print the active config as TOML. Defaults to merged user config.\n"
+        "\n"
+        "  replay-report <report.toml> --target <dir> [--force]\n"
+        "      Reconstruct config-home/noctalia and state-home/noctalia from a support report.\n"
+        "\n"
+        "  replay-report <report.toml> --target <dir> --flattened [--force]\n"
+        "      Reconstruct a single config-home/noctalia/config.toml from the report's merged config.\n";
+
+    constexpr const char* kValidateHelpText =
+        "Usage: noctalia config validate [path]\n"
+        "\n"
+        "With no path, validates the merged configuration the way the shell loads it:\n"
+        "  - every *.toml in the active config dir, then\n"
+        "  - the state-dir settings.toml overrides.\n"
+        "\n"
+        "With a directory path, validates only that directory's *.toml files.\n"
+        "With a file path, validates only that file.\n"
+        "\n"
+        "Reports TOML syntax errors, unknown sections/settings, and bad values\n"
+        "(wrong type, out-of-range, invalid enum/color). Exits 1 if any error is found.\n";
+
+    constexpr const char* kReplayHelpText =
+        "Usage: noctalia config replay-report <report.toml> --target <dir> [--flattened] [--force]\n"
+        "\n"
+        "Options:\n"
+        "  --target <dir>  Directory where replay files are written\n"
+        "  --flattened     Write only merged_config.content as config.toml\n"
+        "  --force         Remove an existing target directory before writing\n";
+
+    constexpr const char* kExportHelpText = "Usage: noctalia config export [merged|full]\n"
+                                            "\n"
+                                            "Prints TOML to stdout from the same config stack used by the shell:\n"
+                                            "  - every *.toml in the active config dir, then\n"
+                                            "  - the state-dir settings.toml overrides.\n"
+                                            "\n"
+                                            "Modes:\n"
+                                            "  merged  Export merged user config only (default)\n"
+                                            "  full    Export full effective config, including built-in defaults\n";
+
+    struct ReplayOptions {
+      std::filesystem::path reportPath;
+      std::filesystem::path targetDir;
+      bool flattened = false;
+      bool force = false;
+    };
+
+    bool writeTextFile(const std::filesystem::path& path, std::string_view content, std::string& error) {
+      std::error_code ec;
+      std::filesystem::create_directories(path.parent_path(), ec);
+      if (ec) {
+        error = "failed to create " + path.parent_path().string() + ": " + ec.message();
+        return false;
+      }
+
+      std::ofstream out(path, std::ios::binary | std::ios::trunc);
+      if (!out.is_open()) {
+        error = "failed to open " + path.string();
+        return false;
+      }
+      out.write(content.data(), static_cast<std::streamsize>(content.size()));
+      if (!out.good()) {
+        error = "failed to write " + path.string();
+        return false;
+      }
+      return true;
+    }
+
+    std::optional<std::filesystem::path> safeRelativePath(const toml::table& table, std::string_view fallback) {
+      std::string raw;
+      if (auto value = table["relative_path"].value<std::string>()) {
+        raw = *value;
+      } else {
+        raw = std::string(fallback);
+      }
+      if (raw.empty()) {
+        return std::nullopt;
+      }
+
+      std::filesystem::path path(raw);
+      if (path.is_absolute()) {
+        return std::nullopt;
+      }
+      for (const auto& part : path) {
+        if (part == "..") {
+          return std::nullopt;
+        }
+      }
+      return path.lexically_normal();
+    }
+
+    bool prepareTarget(const std::filesystem::path& target, bool force, std::string& error) {
+      std::error_code ec;
+      if (std::filesystem::exists(target, ec) && !force) {
+        error = "target already exists; pass --force to replace it: " + target.string();
+        return false;
+      }
+      std::filesystem::create_directories(target, ec);
+      if (ec) {
+        error = "failed to create target " + target.string() + ": " + ec.message();
+        return false;
+      }
+      return true;
+    }
+
+    std::optional<ReplayOptions> parseReplayOptions(int argc, char* argv[], std::string& error) {
+      ReplayOptions options;
+      for (int i = 3; i < argc; ++i) {
+        const char* arg = argv[i];
+        if (std::strcmp(arg, "--help") == 0) {
+          std::puts(kReplayHelpText);
+          return std::nullopt;
+        }
+        if (std::strcmp(arg, "--target") == 0) {
+          if (i + 1 >= argc) {
+            error = "--target requires a directory";
+            return std::nullopt;
+          }
+          options.targetDir = argv[++i];
+          continue;
+        }
+        if (std::strcmp(arg, "--flattened") == 0) {
+          options.flattened = true;
+          continue;
+        }
+        if (std::strcmp(arg, "--force") == 0) {
+          options.force = true;
+          continue;
+        }
+        if (options.reportPath.empty()) {
+          options.reportPath = arg;
+          continue;
+        }
+        error = std::string("unknown argument: ") + arg;
+        return std::nullopt;
+      }
+
+      if (options.reportPath.empty()) {
+        error = "missing report path";
+        return std::nullopt;
+      }
+      if (options.targetDir.empty()) {
+        error = "missing --target <dir>";
+        return std::nullopt;
+      }
+      return options;
+    }
+
+    int replayReport(const ReplayOptions& options, const char* argv0) {
+      toml::table report;
+      try {
+        report = toml::parse_file(options.reportPath.string());
+      } catch (const toml::parse_error& e) {
+        std::fprintf(stderr, "error: failed to parse report: %s\n", e.what());
+        return 1;
+      }
+
+      const std::filesystem::path target = std::filesystem::absolute(options.targetDir).lexically_normal();
+      std::string error;
+      if (!prepareTarget(target, options.force, error)) {
+        std::fprintf(stderr, "error: %s\n", error.c_str());
+        return 1;
+      }
+
+      const std::filesystem::path configHome = target / "config-home";
+      const std::filesystem::path stateHome = target / "state-home";
+      const std::filesystem::path configDir = configHome / "noctalia";
+      const std::filesystem::path stateDir = stateHome / "noctalia";
+
+      if (options.force) {
+        std::error_code ec;
+        std::filesystem::remove_all(configHome, ec);
+        if (ec) {
+          std::fprintf(stderr, "error: failed to remove %s: %s\n", configHome.string().c_str(), ec.message().c_str());
+          return 1;
+        }
+        std::filesystem::remove_all(stateHome, ec);
+        if (ec) {
+          std::fprintf(stderr, "error: failed to remove %s: %s\n", stateHome.string().c_str(), ec.message().c_str());
+          return 1;
+        }
+      }
+
+      if (options.flattened) {
+        const auto merged = report["merged_config"]["content"].value<std::string>();
+        if (!merged.has_value()) {
+          std::fputs("error: report has no [merged_config].content\n", stderr);
+          return 1;
+        }
+        if (!writeTextFile(configDir / "config.toml", *merged, error)) {
+          std::fprintf(stderr, "error: %s\n", error.c_str());
+          return 1;
+        }
+        std::error_code ec;
+        std::filesystem::create_directories(stateDir, ec);
+        if (ec) {
+          std::fprintf(stderr, "error: failed to create %s: %s\n", stateDir.string().c_str(), ec.message().c_str());
+          return 1;
+        }
+      } else {
+        const auto* sources = report["config_sources"].as_array();
+        if (sources != nullptr) {
+          std::size_t fallbackIndex = 0;
+          for (const auto& sourceNode : *sources) {
+            const auto* source = sourceNode.as_table();
+            if (source == nullptr) {
+              continue;
+            }
+            const auto content = (*source)["content"].value<std::string>();
+            if (!content.has_value()) {
+              continue;
+            }
+
+            const auto relative = safeRelativePath(*source, "config_" + std::to_string(fallbackIndex++) + ".toml");
+            if (!relative.has_value()) {
+              std::fputs("error: report contains an unsafe config source path\n", stderr);
+              return 1;
+            }
+            if (!writeTextFile(configDir / *relative, *content, error)) {
+              std::fprintf(stderr, "error: %s\n", error.c_str());
+              return 1;
+            }
+          }
+        }
+
+        const auto* state = report["state_settings"].as_table();
+        bool stateExists = state != nullptr;
+        if (state != nullptr) {
+          if (auto exists = (*state)["exists"].value<bool>()) {
+            stateExists = *exists;
+          }
+        }
+        if (stateExists && state != nullptr) {
+          const auto content = (*state)["content"].value<std::string>().value_or("");
+          if (!writeTextFile(stateDir / "settings.toml", content, error)) {
+            std::fprintf(stderr, "error: %s\n", error.c_str());
+            return 1;
+          }
+        } else {
+          std::error_code ec;
+          std::filesystem::create_directories(stateDir, ec);
+          if (ec) {
+            std::fprintf(stderr, "error: failed to create %s: %s\n", stateDir.string().c_str(), ec.message().c_str());
+            return 1;
+          }
+        }
+
+        const auto* appState = report["app_state"].as_table();
+        bool appStateExists = appState != nullptr;
+        if (appState != nullptr) {
+          if (auto exists = (*appState)["exists"].value<bool>()) {
+            appStateExists = *exists;
+          }
+        }
+        if (appStateExists && appState != nullptr) {
+          const auto content = (*appState)["content"].value<std::string>().value_or("");
+          if (!writeTextFile(stateDir / "state.toml", content, error)) {
+            std::fprintf(stderr, "error: %s\n", error.c_str());
+            return 1;
+          }
+        }
+      }
+
+      std::printf("Replayed support report into %s\n\n", target.string().c_str());
+      std::printf("Config home: %s\n", configHome.string().c_str());
+      std::printf("State home:  %s\n\n", stateHome.string().c_str());
+      std::printf("Run with:\n");
+      std::printf(
+          "  NOCTALIA_CONFIG_HOME=%s NOCTALIA_STATE_HOME=%s %s\n", StringUtils::shellQuote(configHome.string()).c_str(),
+          StringUtils::shellQuote(stateHome.string()).c_str(), StringUtils::shellQuote(argv0).c_str()
+      );
+      return 0;
+    }
+
+    // ANSI color only when the stream is a terminal and NO_COLOR is unset, so
+    // piped/redirected output stays clean.
+    bool useColor(std::FILE* stream) {
+      static const bool noColor = std::getenv("NO_COLOR") != nullptr;
+      return !noColor && isatty(fileno(stream)) != 0;
+    }
+
+    int runValidate(int argc, char* argv[]) {
+      std::string pathArg;
+      for (int i = 3; i < argc; ++i) {
+        if (std::strcmp(argv[i], "--help") == 0) {
+          std::puts(kValidateHelpText);
+          return 0;
+        }
+        if (pathArg.empty()) {
+          pathArg = argv[i];
+          continue;
+        }
+        std::fprintf(stderr, "error: unexpected argument: %s\n", argv[i]);
+        std::fputs("Run 'noctalia config validate --help' for usage.\n", stderr);
+        return 1;
+      }
+
+      // Validation reports through diagnostics below; silence incidental INFO logs
+      // (e.g. the plugin registry scan) so only validation results reach the user.
+      setLogLevel(LogLevel::Warn);
+      schema::Diagnostics diagnostics;
+
+      if (pathArg.empty()) {
+        const std::string configDir = FileUtils::configDir();
+        std::string settingsPath;
+        if (const std::string stateDir = FileUtils::stateDir(); !stateDir.empty()) {
+          settingsPath = stateDir + "/settings.toml";
+        }
+        diagnostics = validateConfigSources(configDir, settingsPath);
+      } else {
+        std::error_code ec;
+        const std::filesystem::path inputPath(pathArg);
+        const auto status = std::filesystem::status(inputPath, ec);
+        if (ec) {
+          std::fprintf(stderr, "error: failed to inspect %s: %s\n", pathArg.c_str(), ec.message().c_str());
+          return 1;
+        }
+        if (std::filesystem::is_directory(status)) {
+          diagnostics = validateConfigSources(pathArg, {});
+        } else if (std::filesystem::is_regular_file(status)) {
+          diagnostics = validateConfigFile(pathArg);
+        } else {
+          std::fprintf(stderr, "error: path is not a regular file or directory: %s\n", pathArg.c_str());
+          return 1;
+        }
+      }
+
+      const bool colorErr = useColor(stderr);
+      const bool colorOut = useColor(stdout);
+
+      std::size_t errors = 0;
+      std::size_t warnings = 0;
+      for (const auto& entry : diagnostics.entries) {
+        const bool isError = entry.severity == schema::Diagnostics::Severity::Error;
+        (isError ? errors : warnings)++;
+        std::FILE* out = isError ? stderr : stdout;
+        const char* tag = isError ? "ERROR" : "WARN "; // padded to align the path column
+        const char* color = (isError ? colorErr : colorOut) ? (isError ? "\033[31m" : "\033[33m") : "";
+        const char* reset = *color != '\0' ? "\033[0m" : "";
+        std::fprintf(out, "%s%s%s %s: %s\n", color, tag, reset, entry.path.c_str(), entry.message.c_str());
+      }
+
+      if (errors > 0) {
+        const char* c = colorErr ? "\033[31m" : "";
+        const char* r = colorErr ? "\033[0m" : "";
+        std::fprintf(stderr, "\n%s✗ Config is invalid%s (%zu error(s), %zu warning(s))\n", c, r, errors, warnings);
+        return 1;
+      }
+      const char* c = colorOut ? "\033[32m" : "";
+      const char* r = colorOut ? "\033[0m" : "";
+      if (warnings > 0) {
+        std::printf("\n%s✓ Config is valid%s (%zu warning(s))\n", c, r, warnings);
+      } else {
+        std::printf("%s✓ Config is valid%s\n", c, r);
+      }
+      return 0;
+    }
+
+    int runExport(int argc, char* argv[]) {
+      std::string mode = "merged";
+      bool modeSet = false;
+      for (int i = 3; i < argc; ++i) {
+        if (std::strcmp(argv[i], "--help") == 0) {
+          std::puts(kExportHelpText);
+          return 0;
+        }
+        if (!modeSet) {
+          mode = argv[i];
+          modeSet = true;
+          continue;
+        }
+        std::fprintf(stderr, "error: unexpected argument: %s\n", argv[i]);
+        std::fputs("Run 'noctalia config export --help' for usage.\n", stderr);
+        return 1;
+      }
+
+      const std::string configDir = FileUtils::configDir();
+      std::string settingsPath;
+      if (const std::string stateDir = FileUtils::stateDir(); !stateDir.empty()) {
+        settingsPath = stateDir + "/settings.toml";
+      }
+
+      std::string error;
+      std::string content;
+      if (mode == "merged") {
+        content = ConfigService::buildMergedUserConfigFromSources(configDir, settingsPath, &error);
+      } else if (mode == "full") {
+        content = ConfigService::buildEffectiveConfigFromSources(configDir, settingsPath, &error);
+      } else {
+        std::fputs("error: expected merged or full\n", stderr);
+        return 1;
+      }
+
+      if (!error.empty()) {
+        std::fprintf(stderr, "error: %s\n", error.c_str());
+        return 1;
+      }
+
+      std::fputs(content.c_str(), stdout);
+      return 0;
+    }
+
+  } // namespace
+
+  int runCli(int argc, char* argv[]) {
+    if (argc < 3 || std::strcmp(argv[2], "--help") == 0) {
+      std::puts(kHelpText);
+      return argc < 3 ? 1 : 0;
+    }
+
+    if (std::strcmp(argv[2], "validate") == 0) {
+      return runValidate(argc, argv);
+    }
+
+    if (std::strcmp(argv[2], "export") == 0) {
+      return runExport(argc, argv);
+    }
+
+    if (std::strcmp(argv[2], "replay-report") == 0) {
+      std::string error;
+      const auto options = parseReplayOptions(argc, argv, error);
+      if (!options.has_value()) {
+        if (!error.empty()) {
+          std::fprintf(stderr, "error: %s\n", error.c_str());
+          std::fputs("Run 'noctalia config replay-report --help' for usage.\n", stderr);
+          return 1;
+        }
+        return 0;
+      }
+      return replayReport(*options, argv[0]);
+    }
+
+    std::fprintf(stderr, "error: unknown config command: %s\n", argv[2]);
+    std::fputs("Run 'noctalia config --help' for usage.\n", stderr);
+    return 1;
+  }
+
+} // namespace noctalia::config

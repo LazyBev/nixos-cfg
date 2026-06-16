@@ -340,6 +340,22 @@
         "type": "github"
       }
     },
+    "noctalia-shell": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "path": "./vendor/noctalia-shell",
+        "type": "path"
+      },
+      "original": {
+        "path": "./vendor/noctalia-shell",
+        "type": "path"
+      },
+      "parent": []
+    },
     "nvf": {
       "inputs": {
         "flake-compat": "flake-compat_2",
@@ -391,6 +407,7 @@
         "nix-cachyos-kernel": "nix-cachyos-kernel",
         "nix-flatpak": "nix-flatpak",
         "nixpkgs": "nixpkgs_2",
+        "noctalia-shell": "noctalia-shell",
         "nvf": "nvf",
         "omnisearch": "omnisearch"
       }

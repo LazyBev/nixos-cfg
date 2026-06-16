@@ -25,13 +25,20 @@
     nix-cachyos-kernel = {
       url = "github:xddxdd/nix-cachyos-kernel/release";
     };
+    noctalia-shell = {
+      url = "path:./vendor/noctalia-shell";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, niri-nix, hjem, nvf, nix-flatpak, omnisearch, nix-cachyos-kernel }: let
+  outputs = { self, nixpkgs, niri-nix, hjem, nvf, nix-flatpak, omnisearch, nix-cachyos-kernel, noctalia-shell }: let
     mkSystem = host: extraModules: nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
-      specialArgs = { inherit nix-cachyos-kernel omnisearch; };
+      specialArgs = { inherit nix-cachyos-kernel omnisearch noctalia-shell; };
       modules = [
+        {
+          nixpkgs.overlays = [ noctalia-shell.overlays.default ];
+        }
         niri-nix.nixosModules.default
         hjem.nixosModules.default
         nvf.nixosModules.default

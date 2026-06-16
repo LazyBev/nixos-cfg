@@ -23,5 +23,9 @@ in {
     }];
   };
 
-  environment.systemPackages = with pkgs; [ adwaita-qt ];
+  environment.systemPackages = with pkgs; [
+    adwaita-qt
+    dracula-theme
+    dracula-icon-theme
+  ];
 }

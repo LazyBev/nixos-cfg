@@ -42,6 +42,48 @@
         doas nix-collect-garbage --delete-old
         nix store optimise
       end
+
+      # ── devenv helpers ──────────────────────────────
+      set DEVENV_ROOT ~/nixos-cfg/devenvs
+
+      function env-shell
+        if test -z "$argv[1]"
+          echo "Usage: env-shell <language>"
+          echo "Available: rust go python cc zig haskell lua ocaml bash-stack"
+          return 1
+        end
+        set dir $DEVENV_ROOT/$argv[1]
+        if not test -d "$dir"
+          echo "Unknown devenv: $argv[1]"
+          return 1
+        end
+        pushd "$dir"
+        devenv shell
+        popd
+      end
+
+      function env-up
+        if test -z "$argv[1]"
+          echo "Usage: env-up <language>"
+          return 1
+        end
+        set dir $DEVENV_ROOT/$argv[1]
+        if not test -d "$dir"
+          echo "Unknown devenv: $argv[1]"
+          return 1
+        end
+        pushd "$dir"
+        devenv up
+        popd
+      end
+
+      for lang in rust go python cc zig haskell lua ocaml bash-stack
+        eval "
+          function env-$lang
+            env-shell $lang
+          end
+        "
+      end
     '';
     shellAliases = {
       cat = "bat -p";

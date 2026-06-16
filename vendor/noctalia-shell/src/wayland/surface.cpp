@@ -1,0 +1,1147 @@
+#include "wayland/surface.h"
+
+#include "core/log.h"
+#include "core/ui_phase.h"
+#include "ext-background-effect-v1-client-protocol.h"
+#include "fractional-scale-v1-client-protocol.h"
+#include "render/animation/animation_manager.h"
+#include "render/render_context.h"
+#include "render/scene/node.h"
+#include "util/sys_utils.h"
+#include "viewporter-client-protocol.h"
+#include "wayland/wayland_connection.h"
+
+#include <algorithm>
+#include <cmath>
+#include <cstdlib>
+#include <format>
+#include <string_view>
+#include <typeinfo>
+#include <unordered_map>
+#include <utility>
+#include <wayland-client.h>
+
+namespace {
+
+  constexpr Logger kLog("surface");
+  constexpr float kSlowSurfaceOperationDebugMs = 50.0f;
+  constexpr float kSlowSurfaceOperationWarnMs = 1000.0f;
+
+  const wl_callback_listener kFrameListener = {
+      .done = &Surface::handleFrameDone,
+  };
+
+  void surfaceEnter(void* data, wl_surface* surface, wl_output* output) {
+    auto* self = static_cast<Surface*>(data);
+    self->onSurfaceOutputEnter(surface, output);
+  }
+
+  void surfaceLeave(void* data, wl_surface* surface, wl_output* output) {
+    auto* self = static_cast<Surface*>(data);
+    self->onSurfaceOutputLeave(surface, output);
+  }
+
+  const wl_surface_listener kSurfaceListener = {
+      .enter = surfaceEnter,
+      .leave = surfaceLeave,
+      .preferred_buffer_scale = nullptr,
+      .preferred_buffer_transform = nullptr,
+  };
+
+  void preferredFractionalScale(void* data, wp_fractional_scale_v1* /*fractionalScale*/, std::uint32_t scale) {
+    auto* self = static_cast<Surface*>(data);
+    self->onPreferredFractionalScale(scale);
+  }
+
+  const wp_fractional_scale_v1_listener kFractionalScaleListener = {
+      .preferred_scale = preferredFractionalScale,
+  };
+
+  std::uint32_t scaledExtent(std::uint32_t logical, float scale) noexcept {
+    if (logical == 0) {
+      return 0;
+    }
+    return std::max<std::uint32_t>(1, static_cast<std::uint32_t>(std::lround(static_cast<float>(logical) * scale)));
+  }
+
+  std::vector<Surface*>& pendingRenderQueue() {
+    static std::vector<Surface*> queue;
+    return queue;
+  }
+
+  std::vector<Surface*>& pendingFrameWorkQueue() {
+    static std::vector<Surface*> queue;
+    return queue;
+  }
+
+  bool idleProfileEnabled() {
+    static const bool enabled = SysUtils::isEnvFlagOn("NOCTALIA_IDLE_PROFILE");
+    return enabled;
+  }
+
+  struct SurfaceProfileState {
+    SurfaceIdleProfileEntry total;
+    std::unordered_map<const Surface*, SurfaceIdleProfileEntry> surfaces;
+  };
+
+  SurfaceProfileState& surfaceProfileState() {
+    static SurfaceProfileState state;
+    return state;
+  }
+
+  enum class SurfaceProfileEvent : std::uint8_t {
+    RequestUpdate,
+    RequestUpdateOnly,
+    RequestLayout,
+    RequestRedraw,
+    QueueFrameWork,
+    ProcessFrameWork,
+    QueueRender,
+    ProcessQueuedRender,
+    PrepareCallback,
+    FrameTick,
+    AnimationTick,
+    UpdateCallback,
+    Render,
+  };
+
+  void addSurfaceProfileEvent(SurfaceIdleProfileEntry& entry, SurfaceProfileEvent event, double ms) {
+    switch (event) {
+    case SurfaceProfileEvent::RequestUpdate:
+      ++entry.requestUpdate;
+      break;
+    case SurfaceProfileEvent::RequestUpdateOnly:
+      ++entry.requestUpdateOnly;
+      break;
+    case SurfaceProfileEvent::RequestLayout:
+      ++entry.requestLayout;
+      break;
+    case SurfaceProfileEvent::RequestRedraw:
+      ++entry.requestRedraw;
+      break;
+    case SurfaceProfileEvent::QueueFrameWork:
+      ++entry.queuedFrameWork;
+      break;
+    case SurfaceProfileEvent::ProcessFrameWork:
+      ++entry.processedFrameWork;
+      break;
+    case SurfaceProfileEvent::QueueRender:
+      ++entry.queuedRenders;
+      break;
+    case SurfaceProfileEvent::ProcessQueuedRender:
+      ++entry.processedQueuedRenders;
+      break;
+    case SurfaceProfileEvent::PrepareCallback:
+      ++entry.prepareCallbacks;
+      entry.prepareMs += ms;
+      break;
+    case SurfaceProfileEvent::FrameTick:
+      ++entry.frameTicks;
+      entry.frameTickMs += ms;
+      break;
+    case SurfaceProfileEvent::AnimationTick:
+      ++entry.animationTicks;
+      entry.animationMs += ms;
+      break;
+    case SurfaceProfileEvent::UpdateCallback:
+      ++entry.updateCallbacks;
+      entry.updateMs += ms;
+      break;
+    case SurfaceProfileEvent::Render:
+      ++entry.renders;
+      entry.renderMs += ms;
+      break;
+    }
+  }
+
+  void recordSurfaceProfileEvent(const Surface& surface, SurfaceProfileEvent event, double ms = 0.0) {
+    if (!idleProfileEnabled()) {
+      return;
+    }
+
+    auto& state = surfaceProfileState();
+    addSurfaceProfileEvent(state.total, event, ms);
+
+    auto& entry = state.surfaces[&surface];
+    if (entry.label.empty()) {
+      entry.label = std::format(
+          "{}@{:x} {}x{}", typeid(surface).name(), reinterpret_cast<std::uintptr_t>(&surface), surface.width(),
+          surface.height()
+      );
+    }
+    addSurfaceProfileEvent(entry, event, ms);
+  }
+
+  template <typename Fn> float elapsedMs(Fn&& fn) {
+    const auto start = std::chrono::steady_clock::now();
+    fn();
+    return std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - start).count();
+  }
+
+  template <typename... Args> void logSlowSurfaceOperation(float ms, std::format_string<Args...> fmt, Args&&... args) {
+    if (ms >= kSlowSurfaceOperationWarnMs) {
+      kLog.warn(fmt, std::forward<Args>(args)...);
+    } else if (ms >= kSlowSurfaceOperationDebugMs) {
+      kLog.debug(fmt, std::forward<Args>(args)...);
+    }
+  }
+
+  std::string outputLabelForSurface(const WaylandConnection& connection, wl_surface* surface) {
+    wl_output* wlOutput = connection.outputForSurface(surface);
+    const WaylandOutput* output = connection.findOutputByWl(wlOutput);
+    if (output == nullptr) {
+      return "unknown";
+    }
+    if (!output->connectorName.empty()) {
+      return output->connectorName;
+    }
+    return std::format("#{}", output->name);
+  }
+
+  class ScopedBoolFlag {
+  public:
+    explicit ScopedBoolFlag(bool& flag) noexcept : m_flag(flag) { m_flag = true; }
+    ~ScopedBoolFlag() { m_flag = false; }
+
+    ScopedBoolFlag(const ScopedBoolFlag&) = delete;
+    ScopedBoolFlag& operator=(const ScopedBoolFlag&) = delete;
+
+  private:
+    bool& m_flag;
+  };
+
+} // namespace
+
+Surface::Surface(WaylandConnection& connection) : m_connection(connection) {}
+
+Surface::~Surface() {
+  cancelQueuedFrameWork();
+  cancelQueuedRender();
+  m_invalidationToken.reset();
+  setSceneRoot(nullptr);
+  destroySurface();
+}
+
+bool Surface::isRunning() const noexcept { return m_running; }
+
+void Surface::pauseFrameLoop() {
+  cancelQueuedFrameWork();
+  cancelQueuedRender();
+  setRunning(false);
+}
+
+void Surface::resumeFrameLoop() {
+  setRunning(true);
+  if (m_configured) {
+    requestLayout();
+  }
+}
+
+float Surface::effectiveBufferScale() const noexcept {
+  if (m_fractionalScale != nullptr && m_viewport != nullptr) {
+    if (m_fractionalScaleNumerator > 0) {
+      return std::max(1.0f, static_cast<float>(m_fractionalScaleNumerator) / 120.0f);
+    }
+    return static_cast<float>(std::max(1, m_bufferScale));
+  }
+  return static_cast<float>(std::max(1, m_bufferScale));
+}
+
+std::uint32_t Surface::bufferWidthFor(std::uint32_t logicalWidth) const noexcept {
+  return scaledExtent(logicalWidth, effectiveBufferScale());
+}
+
+std::uint32_t Surface::bufferHeightFor(std::uint32_t logicalHeight) const noexcept {
+  return scaledExtent(logicalHeight, effectiveBufferScale());
+}
+
+void Surface::handleFrameDone(void* data, wl_callback* callback, std::uint32_t callbackData) {
+  auto* self = static_cast<Surface*>(data);
+  (void)callbackData;
+
+  if (callback != nullptr) {
+    wl_callback_destroy(callback);
+  }
+
+  self->m_frameCallback = nullptr;
+
+  float deltaMs = 0.0f;
+  const auto now = std::chrono::steady_clock::now();
+  if (self->m_lastFrameAt.has_value()) {
+    deltaMs = std::chrono::duration<float, std::milli>(now - *self->m_lastFrameAt).count();
+  }
+  self->m_lastFrameAt = now;
+
+  self->queueFrameWork(true, deltaMs);
+}
+
+void Surface::onSurfaceOutputEnter(wl_surface* surface, wl_output* output) {
+  if (surface != m_surface || output == nullptr) {
+    return;
+  }
+
+  m_connection.notifySurfaceOutputEnter(surface, output);
+
+  const WaylandOutput* outputInfo = m_connection.findOutputByWl(output);
+  if (outputInfo == nullptr) {
+    return;
+  }
+
+  const std::int32_t nextScale = std::max(1, outputInfo->scale);
+  if (nextScale == m_bufferScale) {
+    return;
+  }
+
+  m_bufferScale = nextScale;
+  if ((m_fractionalScale == nullptr || m_viewport == nullptr || m_fractionalScaleNumerator == 0) && m_configured) {
+    onScaleChanged();
+  }
+}
+
+void Surface::onSurfaceOutputLeave(wl_surface* surface, wl_output* output) {
+  if (surface != m_surface || output == nullptr) {
+    return;
+  }
+  m_connection.notifySurfaceOutputLeave(surface, output);
+}
+
+bool Surface::createWlSurface() {
+  m_surface = wl_compositor_create_surface(m_connection.compositor());
+  if (m_surface == nullptr) {
+    return false;
+  }
+  wl_surface_add_listener(m_surface, &kSurfaceListener, this);
+
+  initializeSurfaceScaleProtocol();
+
+  if (m_renderContext != nullptr) {
+    m_renderTarget.create(m_surface, *m_renderContext);
+  }
+  return true;
+}
+
+void Surface::onConfigure(std::uint32_t width, std::uint32_t height) {
+  m_width = width;
+  m_height = height;
+  m_configured = true;
+
+  const float resizeMs = elapsedMs([this] {
+    applySurfaceScaleState();
+    resizeRenderTarget();
+    if (m_renderContext != nullptr) {
+      m_renderContext->syncContentScale(m_renderTarget);
+    }
+  });
+  logSlowSurfaceOperation(
+      resizeMs, "surface configure resize took {:.1f}ms ({}, {}x{} logical)", resizeMs, static_cast<const void*>(this),
+      m_width, m_height
+  );
+
+  if (m_configureCallback) {
+    const float callbackMs = elapsedMs([this] { m_configureCallback(m_width, m_height); });
+    logSlowSurfaceOperation(
+        callbackMs, "surface configure callback took {:.1f}ms ({}, {}x{} logical)", callbackMs,
+        static_cast<const void*>(this), m_width, m_height
+    );
+  }
+  m_redrawRequested = true;
+  queueFrameWork();
+}
+
+void Surface::setConfigureCallback(ConfigureCallback callback) { m_configureCallback = std::move(callback); }
+
+void Surface::setPrepareFrameCallback(PrepareFrameCallback callback) { m_prepareFrameCallback = std::move(callback); }
+
+void Surface::setUpdateCallback(UpdateCallback callback) { m_updateCallback = std::move(callback); }
+
+void Surface::setFrameTickCallback(FrameTickCallback callback) { m_frameTickCallback = std::move(callback); }
+
+void Surface::setSceneRoot(Node* root) {
+  if (m_sceneRoot == root) {
+    return;
+  }
+  m_sceneRoot = root;
+  if (m_sceneRoot == nullptr) {
+    return;
+  }
+
+  const std::weak_ptr<InvalidationToken> token = m_invalidationToken;
+  m_sceneRoot->setInvalidationCallback([this, token](NodeInvalidation invalidation) {
+    if (token.expired()) {
+      return;
+    }
+    const UiPhase phase = currentUiPhase();
+    if (m_inPrepareFrame || phase != UiPhase::Idle) {
+      return;
+    }
+
+    if (invalidation == NodeInvalidation::Layout) {
+      requestLayout();
+    } else {
+      requestRedraw();
+    }
+  });
+}
+
+void Surface::setRenderContext(RenderContext* ctx) {
+  if (m_renderContext == ctx && (ctx == nullptr || m_surface == nullptr || m_renderTarget.surfaceTarget() != nullptr)) {
+    return;
+  }
+
+  m_renderContext = ctx;
+  m_renderTarget.destroy();
+
+  if (m_surface != nullptr && m_renderContext != nullptr) {
+    m_renderTarget.create(m_surface, *m_renderContext);
+    resizeRenderTarget();
+  }
+}
+
+void Surface::initializeSurfaceScaleProtocol() {
+  if (m_surface == nullptr || !m_connection.hasFractionalScale()) {
+    return;
+  }
+
+  auto* viewporter = m_connection.viewporter();
+  auto* fractionalScaleManager = m_connection.fractionalScaleManager();
+  if (viewporter == nullptr || fractionalScaleManager == nullptr) {
+    return;
+  }
+
+  m_viewport = wp_viewporter_get_viewport(viewporter, m_surface);
+  m_fractionalScale = wp_fractional_scale_manager_v1_get_fractional_scale(fractionalScaleManager, m_surface);
+  if (m_fractionalScale != nullptr) {
+    wp_fractional_scale_v1_add_listener(m_fractionalScale, &kFractionalScaleListener, this);
+  }
+
+  // Fractional-scale-v1 requires wl_surface buffer scale to remain 1; viewport
+  // destination keeps the surface-local size equal to the role configure size.
+  wl_surface_set_buffer_scale(m_surface, 1);
+}
+
+void Surface::applySurfaceScaleState() {
+  if (m_surface == nullptr) {
+    return;
+  }
+
+  if (m_fractionalScale != nullptr && m_viewport != nullptr) {
+    wl_surface_set_buffer_scale(m_surface, 1);
+    if (m_width > 0 && m_height > 0) {
+      wp_viewport_set_destination(m_viewport, static_cast<std::int32_t>(m_width), static_cast<std::int32_t>(m_height));
+    }
+    return;
+  }
+
+  wl_surface_set_buffer_scale(m_surface, std::max(1, m_bufferScale));
+}
+
+void Surface::resizeRenderTarget() {
+  if (m_renderContext == nullptr || m_width == 0 || m_height == 0) {
+    return;
+  }
+
+  if (m_surface != nullptr && m_renderTarget.surfaceTarget() == nullptr) {
+    m_renderTarget.create(m_surface, *m_renderContext);
+  }
+
+  const auto bufferWidth = bufferWidthFor(m_width);
+  const auto bufferHeight = bufferHeightFor(m_height);
+
+  m_renderTarget.setLogicalSize(m_width, m_height);
+  if (m_renderTarget.bufferWidth() == bufferWidth
+      && m_renderTarget.bufferHeight() == bufferHeight
+      && m_renderTarget.isReady()) {
+    return;
+  }
+  m_renderTarget.resize(bufferWidth, bufferHeight);
+}
+
+void Surface::onPreferredFractionalScale(std::uint32_t numerator) {
+  if (numerator == 0 || numerator == m_fractionalScaleNumerator) {
+    return;
+  }
+
+  m_fractionalScaleNumerator = numerator;
+  const float preferredScale = std::max(1.0f, static_cast<float>(numerator) / 120.0f);
+  kLog.debug(
+      "fractional scale preferred output={} surface={} scale={:.3f} raw={}/120 logical={}x{} buffer={}x{}",
+      outputLabelForSurface(m_connection, m_surface), static_cast<const void*>(m_surface), preferredScale, numerator,
+      m_width, m_height, bufferWidthFor(m_width), bufferHeightFor(m_height)
+  );
+  if (!m_configured) {
+    return;
+  }
+
+  onScaleChanged();
+}
+
+void Surface::onScaleChanged() {
+  applySurfaceScaleState();
+  resizeRenderTarget();
+  if (m_renderContext != nullptr) {
+    m_renderContext->syncContentScale(m_renderTarget);
+  }
+  requestLayout();
+  requestRedraw();
+}
+
+void Surface::setInputRegion(const std::vector<InputRect>& rects) {
+  if (m_surface == nullptr) {
+    return;
+  }
+
+  wl_region* region = wl_compositor_create_region(m_connection.compositor());
+  if (region == nullptr) {
+    return;
+  }
+
+  for (const auto& r : rects) {
+    wl_region_add(region, r.x, r.y, r.width, r.height);
+  }
+
+  wl_surface_set_input_region(m_surface, region);
+  wl_region_destroy(region);
+}
+
+void Surface::setBlurRegion(const std::vector<InputRect>& rects) {
+  if (m_surface == nullptr || !m_connection.hasBackgroundEffectBlur()) {
+    return;
+  }
+
+  if (m_backgroundEffect == nullptr) {
+    auto* manager = m_connection.backgroundEffectManager();
+    if (manager == nullptr) {
+      return;
+    }
+    m_backgroundEffect = ext_background_effect_manager_v1_get_background_effect(manager, m_surface);
+    if (m_backgroundEffect == nullptr) {
+      return;
+    }
+  }
+
+  wl_region* region = nullptr;
+  if (!rects.empty()) {
+    region = wl_compositor_create_region(m_connection.compositor());
+    if (region == nullptr) {
+      return;
+    }
+    for (const auto& r : rects) {
+      wl_region_add(region, r.x, r.y, r.width, r.height);
+    }
+  }
+  ext_background_effect_surface_v1_set_blur_region(m_backgroundEffect, region);
+  if (region != nullptr) {
+    wl_region_destroy(region);
+  }
+}
+
+std::vector<InputRect> Surface::tessellateRoundedRect(
+    int x, int y, int w, int h, float tlRadius, float trRadius, float brRadius, float blRadius, int stripPx
+) {
+  std::vector<InputRect> out;
+  if (w <= 0 || h <= 0) {
+    return out;
+  }
+
+  stripPx = std::max(stripPx, 1);
+
+  const float halfW = static_cast<float>(w) * 0.5f;
+  const float halfH = static_cast<float>(h) * 0.5f;
+  const float maxRadius = std::min(halfW, halfH);
+  const auto clampR = [maxRadius](float r) {
+    if (r < 0.0f)
+      return 0.0f;
+    return std::min(r, maxRadius);
+  };
+  const float tl = clampR(tlRadius);
+  const float tr = clampR(trRadius);
+  const float br = clampR(brRadius);
+  const float bl = clampR(blRadius);
+
+  const int topBand = static_cast<int>(std::ceil(std::max(tl, tr)));
+  const int bottomBand = static_cast<int>(std::ceil(std::max(bl, br)));
+  const int middleY = y + topBand;
+  const int middleH = h - topBand - bottomBand;
+
+  const auto inset = [](float r, float distFromCornerEdge) -> float {
+    if (r <= 0.0f)
+      return 0.0f;
+    const float dy = r - distFromCornerEdge;
+    if (dy <= 0.0f)
+      return 0.0f;
+    const float ry = std::sqrt(std::max(0.0f, r * r - dy * dy));
+    return r - ry;
+  };
+
+  out.reserve(static_cast<std::size_t>((topBand + bottomBand) / stripPx + 2));
+
+  // Top corner band: strips run from y..y+topBand, distFromTop grows downward.
+  for (int row = 0; row < topBand; row += stripPx) {
+    const int rowH = std::min(stripPx, topBand - row);
+    // Use the strip's bottom edge for the inset sample so the polygon stays inside the curve.
+    const float sample = static_cast<float>(row + rowH);
+    const float leftInset = inset(tl, sample);
+    const float rightInset = inset(tr, sample);
+    const int rx = x + static_cast<int>(std::ceil(leftInset));
+    const int rw = w - static_cast<int>(std::ceil(leftInset)) - static_cast<int>(std::ceil(rightInset));
+    if (rw > 0) {
+      out.push_back({rx, y + row, rw, rowH});
+    }
+  }
+
+  // Middle full-width band.
+  if (middleH > 0) {
+    out.push_back({x, middleY, w, middleH});
+  }
+
+  // Bottom corner band: distFromBottom shrinks as we move down.
+  for (int row = 0; row < bottomBand; row += stripPx) {
+    const int rowFromTop = row;
+    const int rowH = std::min(stripPx, bottomBand - rowFromTop);
+    // Sample at the strip's top edge (distance from bottom edge of the rect).
+    const float sample = static_cast<float>(bottomBand - rowFromTop);
+    const float leftInset = inset(bl, sample);
+    const float rightInset = inset(br, sample);
+    const int rx = x + static_cast<int>(std::ceil(leftInset));
+    const int rw = w - static_cast<int>(std::ceil(leftInset)) - static_cast<int>(std::ceil(rightInset));
+    if (rw > 0) {
+      out.push_back({rx, middleY + middleH + rowFromTop, rw, rowH});
+    }
+  }
+
+  return out;
+}
+
+std::vector<InputRect> Surface::tessellateShape(
+    int x, int y, int w, int h, const CornerShapes& corners, const RectInsets& logicalInset, const Radii& radii,
+    int stripPx
+) {
+  std::vector<InputRect> out;
+  if (w <= 0 || h <= 0) {
+    return out;
+  }
+  stripPx = std::max(stripPx, 1);
+
+  // (x, y, w, h) is the body rect. Expand outward by logicalInset to obtain the
+  // visual rect that hosts concave-corner bulges; the body sits inside it offset
+  // by logicalInset.left / .top.
+  const float insetL = std::max(0.0f, logicalInset.left);
+  const float insetT = std::max(0.0f, logicalInset.top);
+  const float insetR = std::max(0.0f, logicalInset.right);
+  const float insetB = std::max(0.0f, logicalInset.bottom);
+  const int visualX = x - static_cast<int>(std::lround(insetL));
+  const int visualY = y - static_cast<int>(std::lround(insetT));
+  const int visualW = w + static_cast<int>(std::lround(insetL)) + static_cast<int>(std::lround(insetR));
+  const int visualH = h + static_cast<int>(std::lround(insetT)) + static_cast<int>(std::lround(insetB));
+
+  const float W = static_cast<float>(visualW);
+  const float H = static_cast<float>(visualH);
+  const float bodyMinX = std::clamp(insetL, 0.0f, W);
+  const float bodyMaxX = std::clamp(W - insetR, bodyMinX, W);
+  const float bodyMinY = std::clamp(insetT, 0.0f, H);
+  const float bodyMaxY = std::clamp(H - insetB, bodyMinY, H);
+  const float bodyW = bodyMaxX - bodyMinX;
+  const float bodyH = bodyMaxY - bodyMinY;
+  const float maxR = std::max(0.0f, std::min(bodyW, bodyH) * 0.5f);
+  const auto clampR = [maxR](float r) { return std::clamp(r, 0.0f, maxR); };
+  const float rTl = clampR(radii.tl);
+  const float rTr = clampR(radii.tr);
+  const float rBr = clampR(radii.br);
+  const float rBl = clampR(radii.bl);
+
+  const auto extent = [](float r, float dy) -> float {
+    if (r <= 0.0f) {
+      return 0.0f;
+    }
+    const float d2 = r * r - dy * dy;
+    return d2 > 0.0f ? std::sqrt(d2) : 0.0f;
+  };
+
+  // Per-row coverage of the shape as a set of [left, right] segments (clipped to
+  // the visual rect), mirroring the rect shader. Rows in the top/bottom inset
+  // strips (yf outside the body's vertical span) are covered only where a concave
+  // corner bulge crosses the row; two concave corners on the same edge (e.g. a bar
+  // with both inner corners concave) produce two disjoint segments with an empty
+  // middle — so this returns a list, not a single span.
+  const auto rowSegments = [&](float yf) -> std::vector<std::pair<float, float>> {
+    std::vector<std::pair<float, float>> segs;
+    const auto pushSeg = [&](float l, float r) {
+      l = std::clamp(l, 0.0f, W);
+      r = std::clamp(r, l, W);
+      if (r > l) {
+        segs.push_back({l, r});
+      }
+    };
+
+    if (yf < bodyMinY) {
+      const float dy = bodyMinY - yf;
+      if (corners.tl == CornerShape::Concave && rTl > 0.0f && dy <= rTl) {
+        const float chord = std::sqrt(std::max(0.0f, dy * (2.0f * rTl - dy)));
+        pushSeg(bodyMinX, bodyMinX + rTl - chord);
+      }
+      if (corners.tr == CornerShape::Concave && rTr > 0.0f && dy <= rTr) {
+        const float chord = std::sqrt(std::max(0.0f, dy * (2.0f * rTr - dy)));
+        pushSeg(bodyMaxX - rTr + chord, bodyMaxX);
+      }
+      return segs;
+    }
+    if (yf > bodyMaxY) {
+      const float dy = yf - bodyMaxY;
+      if (corners.bl == CornerShape::Concave && rBl > 0.0f && dy <= rBl) {
+        const float chord = std::sqrt(std::max(0.0f, dy * (2.0f * rBl - dy)));
+        pushSeg(bodyMinX, bodyMinX + rBl - chord);
+      }
+      if (corners.br == CornerShape::Concave && rBr > 0.0f && dy <= rBr) {
+        const float chord = std::sqrt(std::max(0.0f, dy * (2.0f * rBr - dy)));
+        pushSeg(bodyMaxX - rBr + chord, bodyMaxX);
+      }
+      return segs;
+    }
+
+    // Body rows: the body fills the middle, so a single span (possibly widened by
+    // concave corners reaching outward, or narrowed by convex rounding) is correct.
+    float left = bodyMinX;
+    float right = bodyMaxX;
+    if (rTl > 0.0f && yf < bodyMinY + rTl) {
+      const float sy = std::clamp(yf, bodyMinY, bodyMinY + rTl);
+      const float e = extent(rTl, sy - (bodyMinY + rTl));
+      if (corners.tl == CornerShape::Concave) {
+        left = std::min(left, bodyMinX - rTl + e);
+      } else {
+        left = std::max(left, bodyMinX + rTl - e);
+      }
+    }
+    if (rBl > 0.0f && yf > bodyMaxY - rBl) {
+      const float sy = std::clamp(yf, bodyMaxY - rBl, bodyMaxY);
+      const float e = extent(rBl, sy - (bodyMaxY - rBl));
+      if (corners.bl == CornerShape::Concave) {
+        left = std::min(left, bodyMinX - rBl + e);
+      } else {
+        left = std::max(left, bodyMinX + rBl - e);
+      }
+    }
+    if (rTr > 0.0f && yf < bodyMinY + rTr) {
+      const float sy = std::clamp(yf, bodyMinY, bodyMinY + rTr);
+      const float e = extent(rTr, sy - (bodyMinY + rTr));
+      if (corners.tr == CornerShape::Concave) {
+        right = std::max(right, bodyMaxX + rTr - e);
+      } else {
+        right = std::min(right, bodyMaxX - rTr + e);
+      }
+    }
+    if (rBr > 0.0f && yf > bodyMaxY - rBr) {
+      const float sy = std::clamp(yf, bodyMaxY - rBr, bodyMaxY);
+      const float e = extent(rBr, sy - (bodyMaxY - rBr));
+      if (corners.br == CornerShape::Concave) {
+        right = std::max(right, bodyMaxX + rBr - e);
+      } else {
+        right = std::min(right, bodyMaxX - rBr + e);
+      }
+    }
+    pushSeg(left, right);
+    return segs;
+  };
+
+  out.reserve(static_cast<std::size_t>(visualH / stripPx + 2));
+
+  for (int row = 0; row < visualH; row += stripPx) {
+    const int rowH = std::min(stripPx, visualH - row);
+    // Conservative inside coverage = intersection of the segment sets at the
+    // strip's top and bottom edges, so the polygon stays inside the actual shape
+    // regardless of corner kind. Each set has at most two segments.
+    const auto segsTop = rowSegments(static_cast<float>(row));
+    const auto segsBot = rowSegments(static_cast<float>(row + rowH));
+    for (const auto& a : segsTop) {
+      for (const auto& b : segsBot) {
+        const float left = std::max(a.first, b.first);
+        const float right = std::min(a.second, b.second);
+        const int rx = visualX + static_cast<int>(std::ceil(left));
+        const int rRight = visualX + static_cast<int>(std::floor(right));
+        const int rw = rRight - rx;
+        if (rw <= 0) {
+          continue;
+        }
+        const int ry = visualY + row;
+        // Vertically merge with a matching strip from the previous row. With two
+        // spike columns the match may not be the very last rect, so scan back over
+        // the few rects that end at this row.
+        bool merged = false;
+        for (auto it = out.rbegin(); it != out.rend(); ++it) {
+          if (it->y + it->height < ry) {
+            break;
+          }
+          if (it->x == rx && it->width == rw && it->y + it->height == ry) {
+            it->height += rowH;
+            merged = true;
+            break;
+          }
+        }
+        if (!merged) {
+          out.push_back({rx, ry, rw, rowH});
+        }
+      }
+    }
+  }
+
+  return out;
+}
+
+void Surface::clearBlurRegion() {
+  if (m_backgroundEffect == nullptr) {
+    return;
+  }
+  ext_background_effect_surface_v1_destroy(m_backgroundEffect);
+  m_backgroundEffect = nullptr;
+}
+
+void Surface::requestUpdate() {
+  recordSurfaceProfileEvent(*this, SurfaceProfileEvent::RequestUpdate);
+  m_updateRequested = true;
+  m_layoutRequested = true;
+  kickFrameLoop();
+}
+
+void Surface::requestUpdateOnly() {
+  recordSurfaceProfileEvent(*this, SurfaceProfileEvent::RequestUpdateOnly);
+  m_updateRequested = true;
+  kickFrameLoop();
+}
+
+void Surface::requestLayout() {
+  recordSurfaceProfileEvent(*this, SurfaceProfileEvent::RequestLayout);
+  m_layoutRequested = true;
+  kickFrameLoop();
+}
+
+void Surface::requestRedraw() {
+  recordSurfaceProfileEvent(*this, SurfaceProfileEvent::RequestRedraw);
+  m_redrawRequested = true;
+  kickFrameLoop();
+}
+
+void Surface::requestFrameTick() {
+  if (!m_running || !m_configured) {
+    return;
+  }
+
+  float deltaMs = 0.0f;
+  const auto now = std::chrono::steady_clock::now();
+  if (m_lastFrameAt.has_value()) {
+    deltaMs = std::chrono::duration<float, std::milli>(now - *m_lastFrameAt).count();
+  }
+
+  if (m_frameCallback != nullptr || m_inFrameHandler || m_inPrepareFrame) {
+    // Defer to handleFrameDone / the next drain, but keep the tick intent so
+    // coalesced spectrum callbacks are not lost while a frame is in flight.
+    m_frameTickPending = true;
+    m_pendingFrameDeltaMs = deltaMs;
+    return;
+  }
+
+  m_lastFrameAt = now;
+  queueFrameWork(true, deltaMs);
+}
+
+void Surface::renderNow() {
+  if (m_running && m_configured) {
+    cancelQueuedFrameWork();
+    cancelQueuedRender();
+    preparePendingFrame();
+    render();
+  }
+}
+
+void Surface::render() {
+  if (m_surface == nullptr || m_renderContext == nullptr || !m_renderTarget.isReady()) {
+    return;
+  }
+
+  requestFrame();
+  const float renderMs = elapsedMs([this] { m_renderContext->renderScene(m_renderTarget, m_sceneRoot); });
+  recordSurfaceProfileEvent(*this, SurfaceProfileEvent::Render, renderMs);
+  logSlowSurfaceOperation(
+      renderMs, "surface render took {:.1f}ms ({}x{} logical, {}x{} buffer)", renderMs, m_width, m_height,
+      m_renderTarget.bufferWidth(), m_renderTarget.bufferHeight()
+  );
+
+  if (m_sceneRoot != nullptr) {
+    m_sceneRoot->clearDirty();
+  }
+  m_redrawRequested = false;
+}
+
+void Surface::requestFrame() {
+  if (m_frameCallback != nullptr) {
+    return;
+  }
+
+  m_frameCallback = wl_surface_frame(m_surface);
+  if (m_frameCallback != nullptr) {
+    wl_callback_add_listener(m_frameCallback, &kFrameListener, this);
+  }
+}
+
+void Surface::destroySurface() {
+  cancelQueuedFrameWork();
+  cancelQueuedRender();
+
+  if (m_frameCallback != nullptr) {
+    wl_callback_destroy(m_frameCallback);
+    m_frameCallback = nullptr;
+  }
+
+  m_renderTarget.destroy();
+
+  if (m_backgroundEffect != nullptr) {
+    ext_background_effect_surface_v1_destroy(m_backgroundEffect);
+    m_backgroundEffect = nullptr;
+  }
+
+  if (m_fractionalScale != nullptr) {
+    wp_fractional_scale_v1_destroy(m_fractionalScale);
+    m_fractionalScale = nullptr;
+  }
+
+  if (m_viewport != nullptr) {
+    wp_viewport_destroy(m_viewport);
+    m_viewport = nullptr;
+  }
+
+  if (m_surface != nullptr) {
+    wl_surface_destroy(m_surface);
+    m_surface = nullptr;
+  }
+
+  m_running = false;
+  m_configured = false;
+}
+
+void Surface::preparePendingFrame() {
+  if (m_prepareFrameCallback == nullptr || (!m_updateRequested && !m_layoutRequested)) {
+    return;
+  }
+  if (!ensureRenderTargetReady()) {
+    return;
+  }
+
+  UiPhaseScope preparePhase(UiPhase::PrepareFrame);
+  const bool needsUpdate = m_updateRequested;
+  const bool needsLayout = m_layoutRequested;
+  m_updateRequested = false;
+  m_layoutRequested = false;
+  ScopedBoolFlag preparing{m_inPrepareFrame};
+  const float callbackMs =
+      elapsedMs([this, needsUpdate, needsLayout] { m_prepareFrameCallback(needsUpdate, needsLayout); });
+  recordSurfaceProfileEvent(*this, SurfaceProfileEvent::PrepareCallback, callbackMs);
+  logSlowSurfaceOperation(
+      callbackMs, "surface prepareFrame callback took {:.1f}ms ({}, {}x{} logical)", callbackMs,
+      static_cast<const void*>(this), m_width, m_height
+  );
+}
+
+void Surface::kickFrameLoop() {
+  if (!m_running
+      || !m_configured
+      || m_frameCallback != nullptr
+      || m_inFrameHandler
+      || m_inPrepareFrame
+      || m_frameWorkQueued) {
+    return;
+  }
+
+  // Anchor the animation clock at "now" instead of clearing it. On the next
+  // handleFrameDone, deltaMs is computed against this anchor, so animations
+  // that start while the surface was idle get a real first-tick deltaMs
+  // instead of zero (which would waste the first tick at t=0).
+  m_lastFrameAt = std::chrono::steady_clock::now();
+
+  if (m_updateRequested || m_layoutRequested) {
+    queueFrameWork();
+    return;
+  }
+
+  queueRenderIfNeeded();
+}
+
+void Surface::queueFrameWork(bool runFrameTick, float deltaMs) {
+  if (runFrameTick) {
+    m_frameTickPending = true;
+    m_pendingFrameDeltaMs = deltaMs;
+  }
+  if (m_frameWorkQueued) {
+    return;
+  }
+  m_frameWorkQueued = true;
+  recordSurfaceProfileEvent(*this, SurfaceProfileEvent::QueueFrameWork);
+  pendingFrameWorkQueue().push_back(this);
+}
+
+void Surface::cancelQueuedFrameWork() {
+  if (!m_frameWorkQueued) {
+    return;
+  }
+  auto& queue = pendingFrameWorkQueue();
+  queue.erase(std::remove(queue.begin(), queue.end(), this), queue.end());
+  m_frameWorkQueued = false;
+  m_frameTickPending = false;
+  m_pendingFrameDeltaMs = 0.0f;
+}
+
+void Surface::processQueuedFrameWork() {
+  m_frameWorkQueued = false;
+  recordSurfaceProfileEvent(*this, SurfaceProfileEvent::ProcessFrameWork);
+  if (m_surface == nullptr || !m_configured) {
+    m_frameTickPending = false;
+    m_pendingFrameDeltaMs = 0.0f;
+    return;
+  }
+
+  const bool runFrameTick = m_frameTickPending;
+  const float deltaMs = m_pendingFrameDeltaMs;
+  m_frameTickPending = false;
+  m_pendingFrameDeltaMs = 0.0f;
+
+  if (runFrameTick) {
+    ScopedBoolFlag frameHandler{m_inFrameHandler};
+
+    if (m_animationManager != nullptr) {
+      const float tickMs = elapsedMs([this, deltaMs] { m_animationManager->tick(deltaMs); });
+      recordSurfaceProfileEvent(*this, SurfaceProfileEvent::AnimationTick, tickMs);
+      logSlowSurfaceOperation(
+          tickMs, "surface animation tick took {:.1f}ms ({}, {}x{} logical)", tickMs, static_cast<const void*>(this),
+          m_width, m_height
+      );
+    }
+
+    if (m_frameTickCallback) {
+      const float callbackMs = elapsedMs([this, deltaMs] { m_frameTickCallback(deltaMs); });
+      recordSurfaceProfileEvent(*this, SurfaceProfileEvent::FrameTick, callbackMs);
+      logSlowSurfaceOperation(
+          callbackMs, "surface frame tick callback took {:.1f}ms ({}, {}x{} logical)", callbackMs,
+          static_cast<const void*>(this), m_width, m_height
+      );
+    }
+
+    if (m_updateCallback) {
+      const float updateMs = elapsedMs([this] { m_updateCallback(); });
+      recordSurfaceProfileEvent(*this, SurfaceProfileEvent::UpdateCallback, updateMs);
+      logSlowSurfaceOperation(
+          updateMs, "surface update callback took {:.1f}ms ({}, {}x{} logical)", updateMs,
+          static_cast<const void*>(this), m_width, m_height
+      );
+    }
+  }
+
+  preparePendingFrame();
+  queueRenderIfNeeded();
+  // Frame loop stops here when idle. Restarted by requestRedraw().
+}
+
+void Surface::queueRenderIfNeeded() {
+  const bool invalidated = m_sceneRoot != nullptr && (m_sceneRoot->paintDirty() || m_sceneRoot->layoutDirty());
+  const bool animating = m_animationManager != nullptr && m_animationManager->hasActive();
+  if (m_redrawRequested || invalidated || animating) {
+    queueRender();
+  }
+}
+
+void Surface::queueRender() {
+  if (m_renderQueued) {
+    return;
+  }
+  m_renderQueued = true;
+  recordSurfaceProfileEvent(*this, SurfaceProfileEvent::QueueRender);
+  pendingRenderQueue().push_back(this);
+}
+
+void Surface::cancelQueuedRender() {
+  if (!m_renderQueued) {
+    return;
+  }
+  auto& queue = pendingRenderQueue();
+  queue.erase(std::remove(queue.begin(), queue.end(), this), queue.end());
+  m_renderQueued = false;
+}
+
+void Surface::renderQueuedFrame() {
+  m_renderQueued = false;
+  recordSurfaceProfileEvent(*this, SurfaceProfileEvent::ProcessQueuedRender);
+  if (m_surface == nullptr || !m_configured) {
+    return;
+  }
+
+  preparePendingFrame();
+  const bool invalidated = m_sceneRoot != nullptr && (m_sceneRoot->paintDirty() || m_sceneRoot->layoutDirty());
+  const bool animating = m_animationManager != nullptr && m_animationManager->hasActive();
+  if (m_redrawRequested || invalidated || animating) {
+    render();
+  }
+}
+
+bool Surface::ensureRenderTargetReady() {
+  if (m_renderContext == nullptr) {
+    return true;
+  }
+  if (m_surface == nullptr || m_width == 0 || m_height == 0) {
+    return false;
+  }
+
+  resizeRenderTarget();
+  return m_renderTarget.isReady();
+}
+
+bool Surface::hasPendingRenders() { return !pendingRenderQueue().empty(); }
+
+bool Surface::hasPendingFrameWork() { return !pendingFrameWorkQueue().empty(); }
+
+SurfaceIdleProfileSnapshot Surface::takeIdleProfileSnapshot(bool reset) {
+  SurfaceIdleProfileSnapshot snapshot;
+  if (!idleProfileEnabled()) {
+    return snapshot;
+  }
+
+  auto& state = surfaceProfileState();
+  snapshot.total = state.total;
+  snapshot.surfaces.reserve(state.surfaces.size());
+  for (const auto& [surface, entry] : state.surfaces) {
+    (void)surface;
+    snapshot.surfaces.push_back(entry);
+  }
+
+  if (reset) {
+    state = SurfaceProfileState{};
+  }
+  return snapshot;
+}
+
+void Surface::drainPendingFrameWork() {
+  auto& queue = pendingFrameWorkQueue();
+  if (queue.empty()) {
+    return;
+  }
+
+  auto pending = std::move(queue);
+  queue.clear();
+  for (auto* surface : pending) {
+    if (surface == nullptr || !surface->m_frameWorkQueued) {
+      continue;
+    }
+    surface->processQueuedFrameWork();
+  }
+}
+
+void Surface::drainPendingRenders() {
+  auto& queue = pendingRenderQueue();
+  if (queue.empty()) {
+    return;
+  }
+
+  auto pending = std::move(queue);
+  queue.clear();
+  for (auto* surface : pending) {
+    if (surface == nullptr || !surface->m_renderQueued) {
+      continue;
+    }
+    surface->renderQueuedFrame();
+  }
+}
