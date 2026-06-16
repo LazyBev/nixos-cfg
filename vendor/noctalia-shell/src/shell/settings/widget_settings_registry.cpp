@@ -704,6 +704,8 @@ namespace settings {
       add(stringSpec("middle_command"));
       add(stringSpec("scroll_up_command"));
       add(stringSpec("scroll_down_command"));
+      add(stringSpec("custom_image", ""));
+      add(boolSpec("custom_image_colorize", false));
     } else if (type == "lock_keys") {
       add(boolSpec("show_caps_lock", true));
       add(boolSpec("show_num_lock", true));

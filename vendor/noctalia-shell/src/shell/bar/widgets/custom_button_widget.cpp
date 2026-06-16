@@ -23,11 +23,13 @@ namespace {
 
 CustomButtonWidget::CustomButtonWidget(
     std::string glyph, std::string label, std::string tooltip, std::string command, std::string rightCommand,
-    std::string middleCommand, std::string scrollUpCommand, std::string scrollDownCommand
+    std::string middleCommand, std::string scrollUpCommand, std::string scrollDownCommand,
+    std::string logoPath, bool customImageColorize
 )
     : m_glyphName(std::move(glyph)), m_labelText(std::move(label)), m_tooltip(std::move(tooltip)),
       m_command(std::move(command)), m_rightCommand(std::move(rightCommand)), m_middleCommand(std::move(middleCommand)),
-      m_scrollUpCommand(std::move(scrollUpCommand)), m_scrollDownCommand(std::move(scrollDownCommand)) {}
+      m_scrollUpCommand(std::move(scrollUpCommand)), m_scrollDownCommand(std::move(scrollDownCommand)),
+      m_logoPath(std::move(logoPath)), m_customImageColorize(customImageColorize) {}
 
 void CustomButtonWidget::create() {
   auto area = std::make_unique<InputArea>();
@@ -89,15 +91,24 @@ void CustomButtonWidget::create() {
     area->setTooltip(m_tooltip);
   }
 
-  area->addChild(
-      ui::glyph({
-          .out = &m_glyph,
-          .glyph = m_glyphName,
-          .glyphSize = Style::baseGlyphSize * m_contentScale,
-          .color = widgetIconColorOr(colorSpecFromRole(ColorRole::OnSurface)),
-          .visible = !m_glyphName.empty(),
-      })
-  );
+  if (!m_logoPath.empty()) {
+    area->addChild(
+        ui::image({
+            .out = &m_image,
+            .fit = ImageFit::Contain,
+        })
+    );
+  } else {
+    area->addChild(
+        ui::glyph({
+            .out = &m_glyph,
+            .glyph = m_glyphName,
+            .glyphSize = Style::baseGlyphSize * m_contentScale,
+            .color = widgetIconColorOr(colorSpecFromRole(ColorRole::OnSurface)),
+            .visible = !m_glyphName.empty(),
+        })
+    );
+  }
 
   area->addChild(
       ui::label({
@@ -119,7 +130,16 @@ void CustomButtonWidget::create() {
 bool CustomButtonWidget::reservesMiddleClick() const noexcept { return !m_middleCommand.empty(); }
 
 void CustomButtonWidget::doLayout(Renderer& renderer, float containerWidth, float containerHeight) {
-  if (m_area == nullptr || m_glyph == nullptr || m_label == nullptr) {
+  if (m_area == nullptr || (m_glyph == nullptr && m_image == nullptr) || m_label == nullptr) {
+    return;
+  }
+
+  if (m_image != nullptr) {
+    refreshCustomImageTint();
+    m_image->setSize(Style::baseGlyphSize * m_contentScale, Style::baseGlyphSize * m_contentScale);
+    const int logoTargetSize = std::max(1, static_cast<int>(48.0f * m_contentScale));
+    m_image->setSourceFile(renderer, m_logoPath, logoTargetSize, true);
+    m_area->setSize(m_image->width(), m_image->height());
     return;
   }
 
@@ -196,6 +216,17 @@ void CustomButtonWidget::doLayout(Renderer& renderer, float containerWidth, floa
     m_label->setPosition(x, std::round((height - m_label->height()) * 0.5f));
   }
   m_area->setSize(width, height);
+}
+
+void CustomButtonWidget::refreshCustomImageTint() {
+  if (m_image == nullptr) {
+    return;
+  }
+  if (m_customImageColorize) {
+    m_image->setForegroundTint(widgetIconColorOr(colorSpecFromRole(ColorRole::OnSurface)));
+  } else {
+    m_image->setForegroundTint(std::nullopt);
+  }
 }
 
 void CustomButtonWidget::executeCommand(const std::string& command) const {

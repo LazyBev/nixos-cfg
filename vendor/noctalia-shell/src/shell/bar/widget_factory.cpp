@@ -254,10 +254,12 @@ std::unique_ptr<Widget> WidgetFactory::create(
     auto trimSetting = [wc](const char* key, const char* fallback = "") {
       return wc != nullptr ? StringUtils::trim(wc->getString(key, fallback)) : std::string(fallback);
     };
+    std::string logoPath = wc != nullptr ? wc->getString("custom_image", "") : std::string{};
+    const bool customImageColorize = wc != nullptr ? wc->getBool("custom_image_colorize", false) : false;
     auto widget = std::make_unique<CustomButtonWidget>(
         trimSetting("glyph", "heart"), trimSetting("label"), trimSetting("tooltip"), trimSetting("command"),
         trimSetting("right_command"), trimSetting("middle_command"), trimSetting("scroll_up_command"),
-        trimSetting("scroll_down_command")
+        trimSetting("scroll_down_command"), std::move(logoPath), customImageColorize
     );
     widget->setContentScale(contentScale);
     return widget;
