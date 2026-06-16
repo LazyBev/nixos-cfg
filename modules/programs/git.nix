@@ -9,6 +9,7 @@
       pull.rebase = true;
       push.autoSetupRemote = true;
       core.editor = "nvim";
+      safe.directory = "/home/yari/nixos-cfg";
     };
   };
 }

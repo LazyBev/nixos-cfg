@@ -6,14 +6,23 @@
       zoxide init fish | source
 
       function gitwho
-        echo (git config user.name) '<'(git config user.email)'>'
+        git config --global user.name "$argv[1]"
+        git config --global user.email "$argv[2]"
       end
 
-      function upgrade
-        set -l CACHE_DIR ~/.cache/update
-        mkdir -p $CACHE_DIR
-        nix flake update $CACHE_DIR/../..
-        sudo nixos-rebuild switch --flake $CACHE_DIR/../.. -j(math (nproc) / 2)
+      function gp
+        git add .
+        git commit -m "$argv"
+        git push
+      end
+
+      function sysupd
+        nix flake update
+        doas nixos-rebuild switch --flake .#"$argv"
+      end
+
+      function update
+        doas nixos-rebuild switch --flake .#"$argv"
       end
     '';
     shellAliases = {
@@ -23,22 +32,8 @@
       lt = "eza -la --icons --tree --level=2";
       grep = "rg";
       py = "python3";
-      sv = "sudo nvim";
-      ga = "git add";
-      gc = "git commit";
-      gp = "git push";
-      gs = "git status";
-      gd = "git diff";
-      gco = "git checkout";
-      gb = "git branch";
-      gl = "git log --oneline --graph";
-      nrs = "sudo nixos-rebuild switch --flake ${config.vars.flakeDir}#${config.vars.hostname} -j(math (nproc) / 2)";
-      nrb = "sudo nixos-rebuild boot --flake ${config.vars.flakeDir}#${config.vars.hostname} -j(math (nproc) / 2)";
-      nrt = "sudo nixos-rebuild test --flake ${config.vars.flakeDir}#${config.vars.hostname} -j(math (nproc) / 2)";
-      update = "nix flake update ${config.vars.flakeDir}";
-      sysupd = "sudo nixos-rebuild switch --flake ${config.vars.flakeDir}#${config.vars.hostname} -j(math (nproc) / 2)";
-      nixgc = "sudo nix-collect-garbage -d";
-      clean = "sudo nix-collect-garbage -d && sudo nix-collect-garbage --delete-old && nix store optimise";
+      nv = "doas nvim";
+      gc = "doas nix-collect-garbage -d && doas nix-collect-garbage --delete-old && nix store optimise";
     };
     shellAbbrs = {
       nix = "nix";
