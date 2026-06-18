@@ -11,7 +11,16 @@
       end
 
       function prevd
-        cd "$OLDPWD"
+        if set -q __last_dir
+          cd "$__last_dir"
+        else
+          echo "No previous directory"
+        end
+      end
+
+      function cd
+        set -g __last_dir "$PWD"
+        builtin cd $argv
       end
 
       function gp
