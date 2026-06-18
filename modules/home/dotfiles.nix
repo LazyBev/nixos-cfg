@@ -19,7 +19,7 @@
     ".config/librewolf/librewolf/rlubfwj2.default/user.js".source = ../../configs/librewolf/user.js;
     ".config/qutebrowser/config.py".source = ../../configs/qutebrowser/config.py;
     ".config/rmpc/config.ron".source = ../../configs/rmpc/config.ron;
-    ".config/vesktop/settings.json".source = ../../configs/vesktop/settings.json;
+    ".config/vesktop/settings.json".source = ../../configs/vesktop/vencord-settings.json;
     ".config/yazi/yazi.toml".source = ../../configs/yazi/yazi.toml;
     ".config/yazi/keymap.toml".source = ../../configs/yazi/keymap.toml;
     ".config/yazi/theme.toml".source = ../../configs/yazi/theme.toml;

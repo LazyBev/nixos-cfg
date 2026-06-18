@@ -31,6 +31,7 @@
     (import ../../overlays/beaker.nix)
     (import ../../overlays/dracula-theme.nix)
     (import ../../overlays/pragmasevka.nix)
+    (import ../../overlays/librewolf-bin.nix)
   ];
   nix.gc = {
     automatic = true;

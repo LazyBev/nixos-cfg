@@ -10,6 +10,10 @@
         git config --global user.email "$argv[2]"
       end
 
+      function prevd
+        cd "$OLDPWD"
+      end
+
       function gp
         git add .
         git commit -m "$argv"

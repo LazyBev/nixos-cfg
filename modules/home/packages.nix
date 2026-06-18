@@ -63,6 +63,10 @@
         "toolkit.legacyUserProfileCustomizations.stylesheets" = { Value = true; Status = "default"; };
         "ui.systemUsesDarkTheme" = { Value = 1; Status = "default"; };
         "widget.content.allow-gtk-dark-theme" = { Value = true; Status = "default"; };
+        "privacy.sanitize.sanitizeOnShutdown" = { Value = false; Status = "locked"; };
+        "privacy.clearOnShutdown.cookies" = { Value = false; Status = "locked"; };
+        "privacy.clearOnShutdown.sessions" = { Value = false; Status = "locked"; };
+        "network.cookie.lifetimePolicy" = { Value = 0; Status = "locked"; };
       };
       SearchEngines = {
         Add = [
@@ -89,6 +93,7 @@ in {
     playerctl
     qutebrowser
     librewolf-wrapped
+    gajim
     signal-desktop
     rmpc
     thunar
@@ -114,6 +119,12 @@ in {
     ripgrep
     swaybg
     unar
+    unzip
+    zip
+    gnused
+    gawk
+    gnugrep
+    which
     zathura
 
     opencode
@@ -125,5 +136,11 @@ in {
     lynis
     motrix
     qbittorrent
+    tor
+    tor-browser
+    xwayland-satellite
+    ucspi-tcp
+    inotify-tools
   ];
 }
+
