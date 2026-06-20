@@ -1,4 +1,6 @@
 { config, pkgs, lib, ... }: {
+  networking.hostName = "monero-miner";
+
   boot.loader.grub.enable = true;
   boot.loader.grub.device = "nodev";
   boot.loader.grub.efiSupport = true;
