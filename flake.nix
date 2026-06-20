@@ -23,13 +23,6 @@
     omnisearch = {
       url = "git+https://git.bwaaa.monster/omnisearch";
     };
-    nix-cachyos-kernel = {
-      url = "github:xddxdd/nix-cachyos-kernel/release";
-    };
-    noctalia-shell = {
-      url = "path:./vendor/noctalia-shell";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
   outputs = inputs @ { flake-parts, ... }:
@@ -43,9 +36,6 @@
 
         shared = {
           modules = [
-            {
-              nixpkgs.overlays = [ inputs.noctalia-shell.overlays.default ];
-            }
             inputs.niri-nix.nixosModules.default
             inputs.hjem.nixosModules.default
             inputs.nvf.nixosModules.default
@@ -57,9 +47,7 @@
           specialArgs = {
             inherit inputs;
             inherit (inputs)
-              nix-cachyos-kernel
               omnisearch
-              noctalia-shell
               ;
           };
         };

@@ -1,6 +1,10 @@
 { config, lib, ... }: {
   boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "nvme" "usbhid" "usb_storage" "sd_mod" ];
-  boot.kernelModules = [ "kvm-amd" ];
+  boot.kernelModules = [ "kvm-amd" "fuse" ];
+  programs.appimage = {
+    enable = true;
+    binfmt = true;
+  };
   hardware.enableRedistributableFirmware = true;
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   hardware.cpu.amd.updateMicrocode = true;

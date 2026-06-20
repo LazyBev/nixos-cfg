@@ -1,12 +1,14 @@
 { pkgs, ... }: {
-  boot.loader.systemd-boot.configurationLimit = null;
-  boot.loader.systemd-boot.enable = true;
+  boot.loader.grub = {
+    enable = true;
+    efiSupport = true;
+    device = "nodev";
+  };
   boot.loader.timeout = 5;
-  boot.loader.systemd-boot.editor = false;
-  boot.loader.grub.enable = false;
-  boot.loader.limine.enable = false;
   boot.loader.efi.canTouchEfiVariables = true;
-  boot.kernelPackages = pkgs.cachyosKernels.linuxPackages-cachyos-bore;
+  boot.loader.systemd-boot.enable = false;
+  boot.loader.limine.enable = false;
+  boot.kernelPackages = pkgs.linuxPackages_latest;
   boot.kernelParams = [
     "quiet"
     "systemd.show_status=error"

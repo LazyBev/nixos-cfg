@@ -15,11 +15,14 @@
 in {
   imports = collectNixFiles ./.;
 
+
   nixpkgs.config = {
     allowUnfree = true;
     allowUnfreePredicate = _: true;
     permittedInsecurePackages = [
       "electron-39.8.10"
+      "librewolf-151.0.2-1"
+      "librewolf-unwrapped-151.0.2-1"
     ];
     joypixels.acceptLicense = true;
   };

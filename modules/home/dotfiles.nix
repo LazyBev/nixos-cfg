@@ -2,8 +2,6 @@
   hjem.users.yari.files = {
     ".config/niri/config.kdl".source = ../../configs/niri/config.kdl;
 
-    ".config/noctalia/config.toml".source = ../../configs/noctalia/config.toml;
-    ".config/noctalia/nixos-logo.png".source = ../../configs/noctalia/nixos-logo.png;
 
     ".config/alacritty/alacritty.toml".source = ../../configs/alacritty/alacritty.toml;
     ".config/dunst/dunstrc".source = ../../configs/dunst/dunstrc;
@@ -83,5 +81,24 @@
     "Pictures/matikanefuku.png".source = ../../configs/Pictures/matikanefuku.png;
     "Pictures/todo.png".source = ../../configs/Pictures/todo.png;
     "Pictures/yellow_burber_wall1.png".source = ../../configs/Pictures/yellow_burber_wall1.png;
+
+    ".config/librewolf/librewolf/profiles.ini".text = ''
+      [Profile0]
+      Name=default
+      IsRelative=1
+      Path=rlubfwj2.default
+      Default=1
+
+      [Profile1]
+      Name=i2p
+      IsRelative=1
+      Path=nhjvl52u.i2p
+
+      [General]
+      StartWithLastProfile=1
+      Version=2
+    '';
+
+    ".config/librewolf/i2p/user.js".source = ../../configs/librewolf/i2p-user.js;
   };
 }

@@ -1,9 +1,9 @@
-{ config, nix-cachyos-kernel, ... }: {
+{ config, ... }: {
   nix.settings = {
     experimental-features = [ "nix-command" "flakes" ];
     trusted-users = [ "yari" ];
     max-jobs = 6;
-    build-cores = 0;
+    build-cores = 12;
     max-substitution-jobs = 16;
     keep-going = true;
     substituters = [
@@ -26,12 +26,9 @@
     ];
   };
   nixpkgs.overlays = [
-    nix-cachyos-kernel.overlays.default
     (import ../../overlays/caelus-theme.nix)
     (import ../../overlays/beaker.nix)
-    (import ../../overlays/dracula-theme.nix)
     (import ../../overlays/pragmasevka.nix)
-    (import ../../overlays/librewolf-bin.nix)
   ];
   nix.gc = {
     automatic = true;

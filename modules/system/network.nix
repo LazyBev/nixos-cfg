@@ -5,6 +5,4 @@
   networking.nameservers = [ "1.1.1.1" "1.0.0.1" ];
   networking.firewall.enable = true;
   networking.firewall.allowedTCPPorts = [ 8087 ];
-  networking.nftables.enable = false;
-  networking.firewall.backend = "iptables";
 }
