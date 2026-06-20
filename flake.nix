@@ -25,11 +25,16 @@
     };
   };
 
-  outputs = inputs @ { flake-parts, ... }:
+  outputs = inputs @ { flake-parts, nixpkgs, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       imports = [ inputs.easy-hosts.flakeModule ];
 
       systems = [ "x86_64-linux" ];
+
+      flake.nixosConfigurations.monero-miner = nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+        modules = [ ./hosts/monero-miner.nix ];
+      };
 
       easy-hosts = {
         useGlobalPkgs = false;
