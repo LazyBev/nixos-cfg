@@ -1,4 +1,6 @@
 { config, pkgs, lib, ... }: {
+  imports = [ ../modules/users/yari.nix ];
+
   networking.hostName = "monero-miner";
 
   boot.loader.grub.enable = true;
@@ -60,12 +62,7 @@
 
   services.openssh.enable = true;
 
-  users.users.yari = {
-    isNormalUser = true;
-    extraGroups = [ "wheel" ];
-    openssh.authorizedKeys.keys = [
-    ];
-  };
+  programs.fish.enable = true;
 
   security.sudo.wheelNeedsPassword = false;
 

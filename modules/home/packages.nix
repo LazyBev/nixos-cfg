@@ -16,7 +16,7 @@
   };
 
   librewolf-i2p = pkgs.writeShellScriptBin "librewolf-i2p" ''
-    exec ${pkgs.librewolf}/bin/librewolf --profile /home/yari/.config/librewolf/i2p --no-remote "$@"
+    exec ${pkgs.librewolf}/bin/librewolf --profile /home/yari/.config/librewolf/librewolf/nhjvl52u.i2p --no-remote "$@"
   '';
 in {
   hjem.users.yari.packages = with pkgs; [

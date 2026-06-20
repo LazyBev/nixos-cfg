@@ -99,6 +99,6 @@
       Version=2
     '';
 
-    ".config/librewolf/i2p/user.js".source = ../../configs/librewolf/i2p-user.js;
+    ".config/librewolf/librewolf/nhjvl52u.i2p/user.js".source = ../../configs/librewolf/i2p-user.js;
   };
 }
