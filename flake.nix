@@ -21,7 +21,7 @@
       url = "github:gmodena/nix-flatpak/?ref=latest";
     };
     omnisearch = {
-      url = "git+https://git.bwaaa.monster/omnisearch";
+      url = "https://git.bwaaa.monster/omnisearch/snapshot/master.tar.gz";
     };
   };
 

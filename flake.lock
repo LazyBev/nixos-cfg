@@ -278,15 +278,12 @@
       "locked": {
         "lastModified": 1780851762,
         "narHash": "sha256-cx6ChdOEi6KYL1qxLtavKaiqP7t2jDJyh3hsqXmMAkA=",
-        "ref": "refs/heads/master",
-        "rev": "36a7cabc3b59e66342e68f400cfb25f720073703",
-        "revCount": 131,
-        "type": "git",
-        "url": "https://git.bwaaa.monster/omnisearch"
+        "type": "tarball",
+        "url": "https://git.bwaaa.monster/omnisearch/snapshot/master.tar.gz"
       },
       "original": {
-        "type": "git",
-        "url": "https://git.bwaaa.monster/omnisearch"
+        "type": "tarball",
+        "url": "https://git.bwaaa.monster/omnisearch/snapshot/master.tar.gz"
       }
     },
     "root": {
