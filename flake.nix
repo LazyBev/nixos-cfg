@@ -19,7 +19,6 @@
     };
     nix-flatpak = {
       url = "github:gmodena/nix-flatpak/?ref=latest";
-      inputs.nixpkgs.follows = "nixpkgs";
     };
     omnisearch = {
       url = "git+https://git.bwaaa.monster/omnisearch";
@@ -80,6 +79,22 @@
             deployable = true;
             tags = [ "laptop" ];
             modules = [ ./hosts/gentuwu-laptop.nix ];
+          };
+
+          secbox = {
+            arch = "x86_64";
+            class = "nixos";
+            deployable = true;
+            tags = [ "security" "pentest" "desktop" ];
+            modules = [ ./hosts/secbox.nix ];
+          };
+
+          secbox-laptop = {
+            arch = "x86_64";
+            class = "nixos";
+            deployable = true;
+            tags = [ "security" "pentest" "laptop" ];
+            modules = [ ./hosts/secbox-laptop.nix ];
           };
         };
       };

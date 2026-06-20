@@ -5,7 +5,24 @@
       viAlias = false;
       vimAlias = true;
       enableLuaLoader = true;
-      extraPackages = with pkgs; [ wl-clipboard ];
+      extraPackages = with pkgs; [
+        wl-clipboard
+        nil
+        marksman
+        pyright
+        rust-analyzer
+        typescript-language-server
+        tailwindcss-language-server
+        bash-language-server
+        clang-tools
+        cmake-language-server
+        gopls
+        ocamlPackages.ocaml-lsp
+        zls
+        haskell-language-server
+        lua-language-server
+        ols
+      ];
       opts = {
         number = true;
         relativenumber = true;
@@ -64,7 +81,10 @@
         clang.enable = true;
         cmake.enable = true;
         go.enable = true;
+        haskell.enable = true;
+        lua.enable = true;
         ocaml.enable = true;
+        odin.enable = true;
         zig.enable = true;
       };
       autocomplete.nvim-cmp.enable = true;

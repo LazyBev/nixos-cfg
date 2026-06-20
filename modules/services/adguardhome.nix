@@ -8,6 +8,7 @@
       schema_version = 22;
       dns = {
         port = 53;
+        bind_hosts = [ "127.0.0.1" ];
         upstream_dns = [
           "https://dns.quad9.net/dns-query"
           "https://dns.cloudflare.com/dns-query"

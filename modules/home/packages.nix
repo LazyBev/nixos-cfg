@@ -92,7 +92,9 @@ in {
     pavucontrol
     playerctl
     qutebrowser
+    quickshell
     librewolf-wrapped
+    lua
     gajim
     signal-desktop
     rmpc
@@ -104,10 +106,15 @@ in {
     networkmanagerapplet
     bat
     fzf
+    gcc
     gh
+    ghc
+    go
+    jq
     just
     tree
     zoxide
+    cargo
     catppuccin-cursors
     curl
     devenv
@@ -116,7 +123,10 @@ in {
     imv
     python3
     noctalia
+    ocaml
+    odin
     ripgrep
+    rustc
     swaybg
     unar
     unzip
@@ -126,6 +136,7 @@ in {
     gnugrep
     which
     zathura
+    zig
 
     opencode
     keepassxc
@@ -141,6 +152,7 @@ in {
     xwayland-satellite
     ucspi-tcp
     inotify-tools
+    android-tools
   ];
 }
 

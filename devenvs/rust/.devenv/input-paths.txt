@@ -1,8 +1,0 @@
-/home/yari/nixos-cfg/devenvs/rust/.devenv/bootstrap/bootstrapLib.nix
-/home/yari/nixos-cfg/devenvs/rust/.devenv/bootstrap/default.nix
-/home/yari/nixos-cfg/devenvs/rust/.devenv/bootstrap/resolve-lock.nix
-/home/yari/nixos-cfg/devenvs/rust/devenv.local.nix
-/home/yari/nixos-cfg/devenvs/rust/devenv.lock
-/home/yari/nixos-cfg/devenvs/rust/devenv.nix
-/home/yari/nixos-cfg/devenvs/rust/devenv.yaml
-/home/yari/nixos-cfg/devenvs/rust/.env

@@ -2,7 +2,16 @@
   programs.fish = {
     enable = true;
     interactiveShellInit = ''
+      set -gx LIBVIRT_DEFAULT_URI qemu:///system
       set -g fish_greeting
+
+      function doas --wraps doas
+        if test "$argv" = "!!"
+            command doas (history -n 1)
+        else
+            command doas $argv
+        end
+      end
       zoxide init fish | source
 
       function gitwho
@@ -19,7 +28,7 @@
       end
 
       function cd
-        set -g __last_dir "$PWD"
+        set -gx __last_dir "$PWD"
         builtin cd $argv
       end
 
@@ -30,12 +39,24 @@
       end
 
       function sysupd
+        if test (count $argv) -lt 2
+          echo "Usage: sysupd <config-dir> <hostname>"
+          echo "Example: sysupd nixos-cfg gentuwu"
+          return 1
+        end
+        pushd ~/$argv[1]
         nix flake update
-        nh os switch ".#$argv"
+        nh os switch ".#$argv[2]"
+        popd
       end
 
       function update
-        nh os switch ".#$argv"
+        if test (count $argv) -lt 2
+          echo "Usage: update <config-dir> <hostname>"
+          echo "Example: update nixos-cfg gentuwu"
+          return 1
+        end
+        nh os switch $HOME/$argv[1]#$argv[2]
       end
 
       function clrcache
@@ -56,46 +77,19 @@
         nix store optimise
       end
 
-      # ── devenv helpers ──────────────────────────────
-      set DEVENV_ROOT ~/nixos-cfg/devenvs
-
-      function env-shell
-        if test -z "$argv[1]"
-          echo "Usage: env-shell <language>"
-          echo "Available: rust go python cc zig haskell lua ocaml bash-stack"
+      function dev
+        if test (count $argv) -lt 2
+          echo "Usage: dev <config-dir> <language>"
+          echo "Example: dev nixos-cfg rust"
           return 1
         end
-        set dir $DEVENV_ROOT/$argv[1]
+        set dir ~/$argv[1]/devenvs/$argv[2]
         if not test -d "$dir"
-          echo "Unknown devenv: $argv[1]"
+          echo "Unknown devenv: $argv[2] in ~/$argv[1]/devenvs/"
           return 1
         end
-        pushd "$dir"
+        cd "$dir"
         devenv shell
-        popd
-      end
-
-      function env-up
-        if test -z "$argv[1]"
-          echo "Usage: env-up <language>"
-          return 1
-        end
-        set dir $DEVENV_ROOT/$argv[1]
-        if not test -d "$dir"
-          echo "Unknown devenv: $argv[1]"
-          return 1
-        end
-        pushd "$dir"
-        devenv up
-        popd
-      end
-
-      for lang in rust go python cc zig haskell lua ocaml bash-stack
-        eval "
-          function env-$lang
-            env-shell $lang
-          end
-        "
       end
     '';
     shellAliases = {

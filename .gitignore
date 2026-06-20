@@ -1,0 +1,17 @@
+# core dumps (not core.h etc)
+core.[0-9]*
+**/core.[0-9]*
+
+# devenv generated directories
+devenvs/
+
+# build artifacts
+**/_build/
+**/.devenv/
+
+# macos
+.DS_Store
+
+# editor
+*.swp
+*.swo
