@@ -1,8 +1,19 @@
 { config, pkgs, lib, ... }: {
   imports = [
     ../modules/users/yari.nix
+    ../modules/programs/monerod.nix
+    ../modules/programs/p2pool.nix
     ./hardware-configuration-monero-miner.nix
   ];
+
+  services.monerod.enable = true;
+
+  services.p2pool = {
+    enable = true;
+    chain = "nano";
+    wallet = "48a3TZTm3yGB4HnWm3fkxBPitoeBgSC1NVHPGaLsFSD7GA195RAYGEufyJk6uzgg2Jd5uUrJXo1Py1ru5xBMfG51H5YC69c";
+    extraArgs = [ "--light-mode" ];
+  };
 
   networking.hostName = "monero-miner";
 
@@ -44,7 +55,8 @@
 
   systemd.services.xmrig = {
     description = "Monero miner";
-    after = [ "sys-devices-virtual-misc-hugepages.device" ];
+    after = [ "sys-devices-virtual-misc-hugepages.device" "p2pool.service" ];
+    wants = [ "p2pool.service" ];
     serviceConfig = {
       ExecStart = "${pkgs.xmrig}/bin/xmrig --config=/etc/xmrig/config.json";
       Restart = "on-failure";
