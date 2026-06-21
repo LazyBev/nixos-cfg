@@ -20,6 +20,8 @@
 
   boot.kernelModules = [ "msr" ];
 
+  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+
   powerManagement.cpuFreqGovernor = lib.mkDefault "performance";
 
   boot.kernel.sysctl = {
@@ -32,6 +34,7 @@
   environment.systemPackages = with pkgs; [
     xmrig
     monero-cli
+    git
   ];
 
   environment.etc."xmrig/config.json".source = ../configs/xmrig/config.json;
