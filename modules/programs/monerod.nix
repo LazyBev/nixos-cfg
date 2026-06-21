@@ -54,6 +54,7 @@ in {
             --rpc-bind-ip 0.0.0.0 \
             --rpc-bind-port ${toString cfg.rpcPort} \
             --zmq-pub tcp://127.0.0.1:${toString cfg.zmqPort} \
+            --confirm-external-bind \
             --p2p-bind-ip 0.0.0.0 \
             --p2p-bind-port ${toString cfg.p2pPort} \
             --out-peers 32 \
