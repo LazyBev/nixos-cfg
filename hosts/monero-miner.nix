@@ -1,25 +1,15 @@
 { config, pkgs, lib, ... }: {
-  imports = [ ../modules/users/yari.nix ];
+  imports = [
+    ../modules/users/yari.nix
+    ./hardware-configuration-monero-miner.nix
+  ];
 
   networking.hostName = "monero-miner";
 
   boot.loader.grub.enable = true;
-  boot.loader.grub.device = "nodev";
+  boot.loader.grub.device = "/dev/nvme0n1";
   boot.loader.grub.efiSupport = true;
   boot.loader.efi.canTouchEfiVariables = true;
-
-  fileSystems."/" = {
-    device = "/dev/disk/by-label/nixos";
-    fsType = "ext4";
-  };
-
-  fileSystems."/boot" = {
-    device = "/dev/disk/by-label/boot";
-    fsType = "vfat";
-    options = [ "fmask=0022" "dmask=0022" ];
-  };
-
-  swapDevices = [ { device = "/dev/disk/by-label/swap"; } ];
 
   boot.kernelParams = [
     "mitigations=off"
