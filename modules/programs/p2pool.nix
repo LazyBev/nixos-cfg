@@ -88,7 +88,7 @@ in {
             --wallet ${cfg.wallet} \
             ${chainFlag} \
             --data-dir ${cfg.dataDir} \
-            --stratum 127.0.0.1:${toString stratumPort} \
+            --stratum 0.0.0.0:${toString stratumPort} \
             ${lib.escapeShellArgs cfg.extraArgs}
         '';
         Restart = "on-failure";
