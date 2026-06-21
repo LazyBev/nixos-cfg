@@ -51,7 +51,14 @@
     };
   };
 
+  networking.networkmanager.enable = true;
+
   services.openssh.enable = true;
+  services.openssh.settings.PasswordAuthentication = false;
+
+  users.users.yari.openssh.authorizedKeys.keys = [
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJnSiJZsEbeNvZzhstYIWVVA9jNWKBSvLaxE6qeN6+iZ yari@gentuwu"
+  ];
 
   programs.fish.enable = true;
 
