@@ -42,7 +42,6 @@
   systemd.services.xmrig = {
     description = "Monero miner";
     after = [ "sys-devices-virtual-misc-hugepages.device" ];
-    wantedBy = [ "multi-user.target" ];
     serviceConfig = {
       ExecStart = "${pkgs.xmrig}/bin/xmrig --config=/etc/xmrig/config.json";
       Restart = "on-failure";
