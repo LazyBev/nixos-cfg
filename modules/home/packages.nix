@@ -84,6 +84,7 @@ in {
     gpu-screen-recorder
 
     monero-gui
+    xmrig
     motrix
     qbittorrent
     tor
