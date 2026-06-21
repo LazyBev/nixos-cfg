@@ -7,7 +7,7 @@
   networking.hostName = "monero-miner";
 
   boot.loader.grub.enable = true;
-  boot.loader.grub.device = "/dev/nvme0n1";
+  boot.loader.grub.device = "/dev/sda";
   boot.loader.grub.efiSupport = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
