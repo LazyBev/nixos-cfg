@@ -72,7 +72,7 @@
   networking.networkmanager.enable = true;
 
   services.openssh.enable = true;
-  services.openssh.settings.PasswordAuthentication = false;
+  services.openssh.settings.PasswordAuthentication = true;
 
   users.users.yari.openssh.authorizedKeys.keys = [
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJnSiJZsEbeNvZzhstYIWVVA9jNWKBSvLaxE6qeN6+iZ yari@gentuwu"
@@ -80,6 +80,12 @@
 
   programs.fish.enable = true;
 
+  security.doas.enable = true;
+  security.doas.extraRules = [{
+    groups = [ "wheel" ];
+    persist = true;
+    keepEnv = true;
+  }];
   security.sudo.wheelNeedsPassword = false;
 
   system.stateVersion = "25.05";
