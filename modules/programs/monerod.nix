@@ -51,7 +51,7 @@ in {
         ExecStart = ''
           ${monerodPkg}/bin/monerod \
             --data-dir ${cfg.dataDir} \
-            --rpc-bind-ip 127.0.0.1 \
+            --rpc-bind-ip 0.0.0.0 \
             --rpc-bind-port ${toString cfg.rpcPort} \
             --zmq-pub tcp://127.0.0.1:${toString cfg.zmqPort} \
             --p2p-bind-ip 0.0.0.0 \

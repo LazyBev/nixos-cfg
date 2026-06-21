@@ -27,6 +27,7 @@ in {
     adwaita-qt
     dracula-theme
     dracula-icon-theme
+    grayjay
     wl-clipboard
   ];
 }

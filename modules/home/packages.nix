@@ -83,6 +83,7 @@ in {
     protonmail-desktop
     gpu-screen-recorder
 
+    monero-cli
     monero-gui
     xmrig
     motrix

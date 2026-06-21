@@ -68,7 +68,7 @@
     };
   };
 
-  networking.firewall.allowedTCPPorts = [ 3333 37890 ];
+  networking.firewall.allowedTCPPorts = [ 3333 37890 18081 ];
   networking.networkmanager.enable = true;
 
   services.openssh.enable = true;
