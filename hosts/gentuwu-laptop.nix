@@ -18,7 +18,11 @@
   services.xserver.videoDrivers = [ "nvidia" ];
   boot.kernelParams = [ "nvidia_drm.modeset=1" ];
 
-  users.users.yari.extraGroups = [ "kvm" "libvirtd" ];
+  virtualisation.docker.enable = true;
+
+  users.users.yari.extraGroups = [ "kvm" "libvirtd" "docker" ];
+
+  environment.etc."xmrig/config.json".source = lib.mkForce ../configs/xmrig/config-laptop.json;
 
   swapDevices = [];
 }

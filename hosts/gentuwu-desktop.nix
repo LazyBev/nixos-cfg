@@ -20,7 +20,9 @@
   services.xserver.videoDrivers = [ "nvidia" ];
   boot.kernelParams = [ "nvidia_drm.modeset=1" ];
 
-  users.users.yari.extraGroups = [ "kvm" "libvirtd" ];
+  virtualisation.docker.enable = true;
+
+  users.users.yari.extraGroups = [ "kvm" "libvirtd" "docker" ];
 
   swapDevices = [];
 
