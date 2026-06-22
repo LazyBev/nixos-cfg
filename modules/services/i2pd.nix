@@ -8,7 +8,7 @@
       httpProxy.enable = true;
       sam.enable = true;
       i2cp = {
-        enable = true;
+        enable = false;
         address = "127.0.0.1";
         port = 7654;
       };

@@ -78,6 +78,8 @@
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJnSiJZsEbeNvZzhstYIWVVA9jNWKBSvLaxE6qeN6+iZ yari@gentuwu"
   ];
 
+  console.keyMap = "uk";
+
   programs.fish.enable = true;
 
   security.doas.enable = true;

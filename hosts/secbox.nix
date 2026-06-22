@@ -4,6 +4,7 @@
     ../modules/system/nix.nix
     ../modules/programs/secbox-common.nix
     ../modules/programs/security-tools.nix
+    ../modules/security/tor-hardening.nix
     ../modules/users/pentest.nix
   ];
 
