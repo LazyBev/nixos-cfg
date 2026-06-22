@@ -78,7 +78,10 @@
             class = "nixos";
             deployable = true;
             tags = [ "desktop" ];
-            modules = [ ./hosts/gentuwu-desktop.nix ];
+            modules = [
+              ./hosts/gentuwu.nix
+              { gentuwu.hardware.isLaptop = false; }
+            ];
           };
 
           gentuwu-laptop = {
@@ -86,9 +89,11 @@
             class = "nixos";
             deployable = true;
             tags = [ "laptop" ];
-            modules = [ ./hosts/gentuwu-laptop.nix ];
+            modules = [
+              ./hosts/gentuwu.nix
+              { gentuwu.hardware.isLaptop = true; }
+            ];
           };
-
 
         };
       };
