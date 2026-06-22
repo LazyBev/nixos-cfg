@@ -77,22 +77,7 @@
             arch = "x86_64";
             class = "nixos";
             deployable = true;
-            tags = [ "desktop" ];
-            modules = [
-              ./hosts/gentuwu.nix
-              { gentuwu.hardware.isLaptop = false; }
-            ];
-          };
-
-          gentuwu-laptop = {
-            arch = "x86_64";
-            class = "nixos";
-            deployable = true;
-            tags = [ "laptop" ];
-            modules = [
-              ./hosts/gentuwu.nix
-              { gentuwu.hardware.isLaptop = true; }
-            ];
+            modules = [ ./hosts/gentuwu.nix ];
           };
 
         };

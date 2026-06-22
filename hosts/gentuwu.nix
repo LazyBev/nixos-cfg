@@ -1,6 +1,4 @@
-{ config, lib, ... }: let
-  isLaptop = config.gentuwu.hardware.isLaptop;
-in {
+{ config, lib, ... }: {
   imports = [ ./gentuwu-base.nix ];
 
   networking.hostName = "gentuwu";
@@ -14,14 +12,11 @@ in {
     fsType = "vfat";
   };
 
-  swapDevices = lib.mkIf isLaptop [{
+  swapDevices = [{
     device = "/dev/disk/by-label/swap";
   }];
 
   boot.kernelParams = [ "nvidia_drm.modeset=1" ];
 
-  environment.etc."xmrig/config.json".source =
-    if isLaptop
-    then ../configs/xmrig/config-laptop.json
-    else ../configs/xmrig/config-desktop.json;
+  environment.etc."xmrig/config.json".source = ../configs/xmrig/config-unified.json;
 }
