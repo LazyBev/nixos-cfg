@@ -5,6 +5,23 @@
 
   networking.hostName = "worker-opti";
 
+  boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "nvme" "usb_storage" "sd_mod" ];
+  boot.kernelModules = [ "kvm-intel" ];
+
+  nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
+
+  fileSystems."/" = {
+    device = "/dev/disk/by-label/nixos";
+    fsType = "ext4";
+  };
+  fileSystems."/boot" = {
+    device = "/dev/disk/by-label/boot";
+    fsType = "vfat";
+  };
+  swapDevices = [{
+    device = "/dev/disk/by-label/swap";
+  }];
+
   boot.loader.grub.enable = true;
   boot.loader.grub.device = "nodev";
   boot.loader.grub.efiSupport = true;
