@@ -31,9 +31,14 @@
 
       systems = [ "x86_64-linux" ];
 
-      flake.nixosConfigurations.monero-miner = nixpkgs.lib.nixosSystem {
+      flake.nixosConfigurations.worker-vic = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
-        modules = [ ./hosts/monero-miner.nix ];
+        modules = [ ./hosts/worker-vic.nix ];
+      };
+
+      flake.nixosConfigurations.worker-opti = nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+        modules = [ ./hosts/worker-opti.nix ];
       };
 
       flake.nixosConfigurations.secbox = nixpkgs.lib.nixosSystem {

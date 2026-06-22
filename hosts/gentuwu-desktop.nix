@@ -15,4 +15,6 @@
   swapDevices = [];
 
   boot.kernelParams = [ "nvidia_drm.modeset=1" ];
+
+  environment.etc."xmrig/config.json".source = lib.mkForce ../configs/xmrig/config-desktop.json;
 }
