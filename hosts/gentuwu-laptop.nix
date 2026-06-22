@@ -1,6 +1,7 @@
 { config, lib, ... }: {
   imports = [ ./gentuwu-base.nix ./hardware-configuration.nix ];
 
+  networking.hostName = "gentuwu";
   gentuwu.hardware.isLaptop = true;
 
   swapDevices = [];

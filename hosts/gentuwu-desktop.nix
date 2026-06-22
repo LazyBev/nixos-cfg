@@ -1,6 +1,7 @@
 { config, lib, ... }: {
   imports = [ ./gentuwu-base.nix ];
 
+  networking.hostName = "gentuwu";
   gentuwu.hardware.isLaptop = false;
 
   fileSystems."/" = {
