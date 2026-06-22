@@ -40,5 +40,5 @@
   virtualisation.docker.enable = true;
   users.users.yari.extraGroups = [ "kvm" "libvirtd" "docker" ];
 
-  environment.etc."xmrig/config.json".source = ../configs/xmrig/config-unified.json;
+  environment.etc."xmrig/config.json".source = lib.mkForce ../configs/xmrig/config-unified.json;
 }
