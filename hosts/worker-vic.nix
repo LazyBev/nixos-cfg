@@ -60,10 +60,6 @@
     serviceConfig = {
       ExecStart = "${pkgs.xmrig}/bin/xmrig --config=/etc/xmrig/config.json";
       Restart = "on-failure";
-      Nice = -20;
-      IOSchedulingClass = "realtime";
-      CPUSchedulingPolicy = "fifo";
-      CPUSchedulingPriority = 99;
       LimitMEMLOCK = "infinity";
     };
   };
