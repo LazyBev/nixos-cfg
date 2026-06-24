@@ -1,4 +1,4 @@
-{pkgs, ...}: let
+{pkgs, inputs, ...}: let
   ffa = pkgs.fetchFirefoxAddon;
 
   impala-nm = pkgs.callPackage ../../pkgs/impala-nm {};
@@ -103,6 +103,8 @@ in {
     astroterm
     caligula
     impala-nm
+    inputs.ribbon.packages.${pkgs.stdenv.hostPlatform.system}.default
+    usbutils
   ];
 }
 

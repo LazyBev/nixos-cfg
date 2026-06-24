@@ -36,6 +36,7 @@
         useGlobalPkgs = false;
 
         shared = {
+          modules = [];
           specialArgs = {
             inherit inputs;
             inherit (inputs)
@@ -51,6 +52,7 @@
             deployable = true;
             modules = [
               ./hosts/gentuwu.nix
+              { _module.args = { inherit inputs; inherit (inputs) omnisearch; }; }
               inputs.niri-nix.nixosModules.default
               inputs.hjem.nixosModules.default
               inputs.nvf.nixosModules.default

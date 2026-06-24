@@ -1,8 +1,6 @@
 { config, lib, pkgs, inputs, ... }: {
   networking.hostName = "gentuwu";
 
-  environment.systemPackages = [ inputs.ribbon.packages.${pkgs.system}.default ];
-
   programs.appimage = {
     enable = true;
     binfmt = true;
