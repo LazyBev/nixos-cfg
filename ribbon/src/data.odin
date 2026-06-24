@@ -393,6 +393,15 @@ has_ethernet :: proc() -> bool {
   return fgets(&line[0], i32(len(line)), f) != nil
 }
 
+/* ── volume ────────────────────────────────────────────────── */
+get_volume :: proc(buf: ^Buf512) -> cstring {
+  cmd_buf: Buf512
+  cmd := "wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk '{printf \"%d%%\", $2 * 100}'"
+  n := copy(cmd_buf[:], cmd)
+  cmd_buf[n] = 0
+  return run_cmd(cstring(&cmd_buf[0]), buf)
+}
+
 /* ── resolve: source → string ──────────────────────────────── */
 apply_format :: proc(buf: ^Buf512, raw: cstring, fmt: string) -> cstring {
   if fmt == "" || fmt == "{}" { return raw }
@@ -460,6 +469,8 @@ resolve_source :: proc(source: DataSource, buf: ^Buf512, cpu_cache: ^CpuCache, b
     } else {
       raw = cstring("")
     }
+  case DataVolume:
+    raw = get_volume(buf)
   case DataCmd:
     cmd_buf: Buf512
     n := copy(cmd_buf[:], s.command)

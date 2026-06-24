@@ -10,6 +10,7 @@ DataSource :: union {
   DataDistro,
   DataDistroLogo,
   DataWifi,
+  DataVolume,
   DataCmd,
 }
 
@@ -22,6 +23,7 @@ DataBatteryState :: struct {}
 DataDistro  :: struct {}
 DataDistroLogo :: struct { name: string }
 DataWifi    :: struct {}
+DataVolume  :: struct {}
 DataCmd     :: struct { command: string }
 
 Segment :: struct {

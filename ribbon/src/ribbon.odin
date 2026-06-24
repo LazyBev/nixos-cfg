@@ -4,10 +4,8 @@ import "base:runtime"
 import "core:os"
 import "core:fmt"
 
-foreign import render_objs "../build/render.o"
-
 @(default_calling_convention="c")
-foreign render_objs {
+foreign _ {
   renderer_create         :: proc(height: i32, bg_hex: cstring) -> rawptr ---
   renderer_destroy        :: proc(r: rawptr) ---
   renderer_get_fd         :: proc(r: rawptr) -> i32 ---

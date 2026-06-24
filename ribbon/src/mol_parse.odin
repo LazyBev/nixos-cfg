@@ -33,6 +33,10 @@ tokenize :: proc(s: string, allocator := context.allocator) -> ([]Token, bool) {
       i = j
     } else if c == ';' {
       for i < len(s) && s[i] != '\n' { i += 1 }
+    } else if c == '/' && i + 1 < len(s) && s[i + 1] == '*' {
+      i += 2
+      for i + 1 < len(s) && !(s[i] == '*' && s[i + 1] == '/') { i += 1 }
+      if i < len(s) { i += 2 }
     } else if c == '!' && i + 1 < len(s) && s[i + 1] == '"' {
       j := i + 2
       for j < len(s) && s[j] != '"' { j += 1 }

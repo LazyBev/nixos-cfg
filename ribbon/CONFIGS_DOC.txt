@@ -3,8 +3,9 @@
 ╚═══════════════════════════════════════════════════════════╝
 
 Config files are evaluated top to bottom. Each line is an
-s-expression, basically (command arg1 arg2 ...). Comments
-start with ;, blank lines are ignored. Everything is
+s-expression, basically (command arg1 arg2 ...). Line comments
+start with ;, block comments use /* ... */. Blank lines are
+ignored. Everything is
 processed in order, and if you call the same command twice
 the second call overrides the first.
 
@@ -127,6 +128,10 @@ SOURCES:
                 Uses nmcli to poll the currently connected
                 network. If no WiFi but ethernet is active,
                 shows "eth". If nothing active, blank.
+
+  volume        Volume percentage of the default audio sink,
+                like "70%". Uses wpctl get-volume @DEFAULT_AUDIO_SINK@
+                piped through awk. Requires WirePlumber/PulseAudio.
 
   !command      Runs a shell command and shows its output.
                 The ! is part of the name, not a separate

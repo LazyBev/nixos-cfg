@@ -85,6 +85,6 @@ gcc -c -O2 -Wall $PKGCFLAGS "${CSRC}/xdg-shell.c" -o build/xdg-shell.o
 echo "Building ribbon..."
 odin build "${SRC}" \
   -out:build/ribbon \
-  -extra-linker-flags:"$(pwd)/build/wlr-layer-shell-unstable-v1.o $(pwd)/build/xdg-shell.o $PKGLIBS -lrt -lm"
+  -extra-linker-flags:"build/render.o build/wlr-layer-shell-unstable-v1.o build/xdg-shell.o $PKGLIBS -lrt -lm"
 
 echo "Done: build/ribbon"

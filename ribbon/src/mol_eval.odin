@@ -33,7 +33,7 @@ init_global_env :: proc() {
   keywords := [?]string{
     "size", "family", "font", "height",
     "colour", "color", "font-colour", "font-color",
-    "clock", "cpu", "memory", "battery", "battery-state", "distro", "wifi",
+    "clock", "cpu", "memory", "battery", "battery-state", "distro", "wifi", "volume",
     "distro-logo",
     "left", "center", "right", "systray",
     "text", "txt", "format", "fmt",
@@ -580,6 +580,7 @@ source_from_name :: proc(name: string) -> DataSource {
   case "distro":  return DataDistro{}
   case "distro-logo": return DataDistroLogo{name = get_distro_logo()}
   case "wifi":    return DataWifi{}
+  case "volume":  return DataVolume{}
   }
   return DataCmd{command = name}
 }

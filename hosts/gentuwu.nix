@@ -1,5 +1,7 @@
-{ config, lib, pkgs, ... }: {
+{ config, lib, pkgs, inputs, ... }: {
   networking.hostName = "gentuwu";
+
+  environment.systemPackages = [ inputs.self.packages.${pkgs.system}.ribbon ];
 
   programs.appimage = {
     enable = true;
@@ -39,6 +41,11 @@
 
   virtualisation.docker.enable = true;
   users.users.yari.extraGroups = [ "kvm" "libvirtd" "docker" ];
+
+  services.hardware.openrgb = {
+    enable = true;
+    motherboard = "amd";
+  };
 
   environment.etc."xmrig/config.json".source = lib.mkForce ../configs/xmrig/config-unified.json;
 }

@@ -1,6 +1,8 @@
 {pkgs, ...}: let
   ffa = pkgs.fetchFirefoxAddon;
 
+  impala-nm = pkgs.callPackage ../../pkgs/impala-nm {};
+
   librewolf-wrapped = pkgs.wrapFirefox pkgs.librewolf-unwrapped {
     nixExtensions = [
       (ffa { name = "ublock-origin"; url = "https://addons.mozilla.org/firefox/downloads/file/4814095/ublock_origin-1.71.0.xpi"; sha256 = "47f788a1fc2c014830b30bb0ef9588615701b98c5265fb19b8cf4ba779849feb"; })
@@ -100,6 +102,7 @@ in {
     dysk
     astroterm
     caligula
+    impala-nm
   ];
 }
 

@@ -1,4 +1,4 @@
-SUDO := `if command -v doas >/dev/null 2>&1; then echo doas; else echo sudo; fi`
+SUDO := `if command -v sudo >/dev/null 2>&1; then echo sudo; else echo doas; fi`
 
 rebuild:
     rm -rf build
@@ -12,6 +12,7 @@ install:
     {{SUDO}} cp build/ribbon /usr/local/bin/ribbon
     {{SUDO}} chmod 755 /usr/local/bin/ribbon
     mkdir -p ~/.config/ribbon
+    rm -f ~/.config/ribbon/config.rib
     cp configs/ribbon/config.rib ~/.config/ribbon/config.rib
 
 user-install:
@@ -20,6 +21,7 @@ user-install:
     cp build/ribbon ~/.local/bin/ribbon
     chmod 755 ~/.local/bin/ribbon
     mkdir -p ~/.config/ribbon
+    rm -f ~/.config/ribbon/config.rib
     cp configs/ribbon/config.rib ~/.config/ribbon/config.rib
 
 clean:

@@ -31,6 +31,10 @@
 
       systems = [ "x86_64-linux" ];
 
+      perSystem = { pkgs, ... }: {
+        packages.ribbon = pkgs.callPackage ./ribbon/package.nix {};
+      };
+
       flake.nixosConfigurations.worker-vic = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         modules = [ ./hosts/worker-vic.nix ];
