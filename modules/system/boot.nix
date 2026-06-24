@@ -1,11 +1,11 @@
-{ lib, pkgs, ... }: {
+{ pkgs, ... }: {
   boot.loader.grub = {
     enable = true;
     efiSupport = true;
     device = "nodev";
   };
   boot.loader.timeout = 5;
-  boot.loader.efi.canTouchEfiVariables = lib.mkDefault true;
+  boot.loader.efi.canTouchEfiVariables = true;
   boot.loader.systemd-boot.enable = false;
   boot.loader.limine.enable = false;
   boot.kernelPackages = pkgs.linuxPackages_latest;

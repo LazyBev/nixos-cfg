@@ -32,6 +32,26 @@
 
       systems = [ "x86_64-linux" ];
 
+      flake.nixosConfigurations.worker-vic = nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+        modules = [ ./hosts/worker-vic.nix ];
+      };
+
+      flake.nixosConfigurations.worker-opti = nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+        modules = [ ./hosts/worker-opti.nix ];
+      };
+
+      flake.nixosConfigurations.secbox = nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+        modules = [ ./hosts/secbox.nix ];
+      };
+
+      flake.nixosConfigurations.secbox-laptop = nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+        modules = [ ./hosts/secbox-laptop.nix ];
+      };
+
       easy-hosts = {
         useGlobalPkgs = false;
 
@@ -61,33 +81,6 @@
             modules = [ ./hosts/gentuwu.nix ];
           };
 
-          worker-vic = {
-            arch = "x86_64";
-            class = "nixos";
-            deployable = true;
-            modules = [ ./hosts/worker-vic.nix ];
-          };
-
-          worker-opti = {
-            arch = "x86_64";
-            class = "nixos";
-            deployable = true;
-            modules = [ ./hosts/worker-opti.nix ];
-          };
-
-          secbox = {
-            arch = "x86_64";
-            class = "nixos";
-            deployable = true;
-            modules = [ ./hosts/secbox.nix ];
-          };
-
-          secbox-laptop = {
-            arch = "x86_64";
-            class = "nixos";
-            deployable = true;
-            modules = [ ./hosts/secbox-laptop.nix ];
-          };
         };
       };
     };
