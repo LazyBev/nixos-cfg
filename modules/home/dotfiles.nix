@@ -1,6 +1,7 @@
 { pkgs, ... }: {
   hjem.users.yari.files = {
     ".config/niri/config.kdl".source = ../../configs/niri/config.kdl;
+    ".config/ribbon/config.rib".source = ../../configs/ribbon/config.rib;
 
 
     ".config/alacritty/alacritty.toml".source = ../../configs/alacritty/alacritty.toml;
@@ -16,6 +17,7 @@
     ".config/librewolf/sidebery-sidebar.css".source = ../../configs/librewolf/sidebery-sidebar.css;
     ".config/librewolf/librewolf/rlubfwj2.default/user.js".source = ../../configs/librewolf/user.js;
     ".config/qutebrowser/config.py".source = ../../configs/qutebrowser/config.py;
+    ".config/qutebrowser/styles/youtube.css".source = ../../configs/qutebrowser/styles/youtube.css;
     ".config/rmpc/config.ron".source = ../../configs/rmpc/config.ron;
     ".config/vesktop/settings.json".source = ../../configs/vesktop/vencord-settings.json;
     ".config/yazi/yazi.toml".source = ../../configs/yazi/yazi.toml;

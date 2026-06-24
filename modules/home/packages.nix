@@ -94,6 +94,12 @@ in {
     ucspi-tcp
     inotify-tools
     android-tools
+    brightnessctl
+    pastel
+    rsync
+    dysk
+    astroterm
+    caligula
   ];
 }
 
