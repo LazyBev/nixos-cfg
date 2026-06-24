@@ -23,6 +23,7 @@
     omnisearch = {
       url = "https://git.bwaaa.monster/omnisearch/snapshot/master.tar.gz";
     };
+    ribbon.url = "github:LazyBev/ribbon";
   };
 
   outputs = inputs @ { flake-parts, nixpkgs, ... }:
@@ -30,10 +31,6 @@
       imports = [ inputs.easy-hosts.flakeModule ];
 
       systems = [ "x86_64-linux" ];
-
-      perSystem = { pkgs, ... }: {
-        packages.ribbon = pkgs.callPackage ./ribbon/package.nix {};
-      };
 
       flake.nixosConfigurations.worker-vic = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";

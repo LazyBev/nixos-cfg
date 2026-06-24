@@ -1,7 +1,7 @@
 { config, lib, pkgs, inputs, ... }: {
   networking.hostName = "gentuwu";
 
-  environment.systemPackages = [ inputs.self.packages.${pkgs.system}.ribbon ];
+  environment.systemPackages = [ inputs.ribbon.packages.${pkgs.system}.default ];
 
   programs.appimage = {
     enable = true;
