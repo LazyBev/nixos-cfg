@@ -304,11 +304,11 @@
         "nixpkgs": "nixpkgs_3"
       },
       "locked": {
-        "lastModified": 1782303784,
-        "narHash": "sha256-D9I6MLcgp9F/J5VuY6XnoziVQZx0BlnlVRPwlysD9is=",
+        "lastModified": 1782304007,
+        "narHash": "sha256-meUeP39cyOpr3pZFxjiz5SE9KDIr5h+hPstQAE9R6M0=",
         "owner": "LazyBev",
         "repo": "ribbon",
-        "rev": "620faa1185b7ef5802a60c2224d5ec8005b2b1bd",
+        "rev": "39bf271ccc21d0ac46b0966772079dcd9bc04548",
         "type": "github"
       },
       "original": {
