@@ -32,39 +32,10 @@
 
       systems = [ "x86_64-linux" ];
 
-      flake.nixosConfigurations.worker-vic = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
-        modules = [ ./hosts/worker-vic.nix ];
-      };
-
-      flake.nixosConfigurations.worker-opti = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
-        modules = [ ./hosts/worker-opti.nix ];
-      };
-
-      flake.nixosConfigurations.secbox = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
-        modules = [ ./hosts/secbox.nix ];
-      };
-
-      flake.nixosConfigurations.secbox-laptop = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
-        modules = [ ./hosts/secbox-laptop.nix ];
-      };
-
       easy-hosts = {
         useGlobalPkgs = false;
 
         shared = {
-          modules = [
-            inputs.niri-nix.nixosModules.default
-            inputs.hjem.nixosModules.default
-            inputs.nvf.nixosModules.default
-            inputs.nix-flatpak.nixosModules.nix-flatpak
-            inputs.omnisearch.nixosModules.default
-            ./modules
-          ];
-
           specialArgs = {
             inherit inputs;
             inherit (inputs)
@@ -78,9 +49,44 @@
             arch = "x86_64";
             class = "nixos";
             deployable = true;
-            modules = [ ./hosts/gentuwu.nix ];
+            modules = [
+              ./hosts/gentuwu.nix
+              inputs.niri-nix.nixosModules.default
+              inputs.hjem.nixosModules.default
+              inputs.nvf.nixosModules.default
+              inputs.nix-flatpak.nixosModules.nix-flatpak
+              inputs.omnisearch.nixosModules.default
+              ./modules
+            ];
           };
 
+          worker-vic = {
+            arch = "x86_64";
+            class = "nixos";
+            deployable = true;
+            modules = [ ./hosts/worker-vic.nix ];
+          };
+
+          worker-opti = {
+            arch = "x86_64";
+            class = "nixos";
+            deployable = true;
+            modules = [ ./hosts/worker-opti.nix ];
+          };
+
+          secbox = {
+            arch = "x86_64";
+            class = "nixos";
+            deployable = true;
+            modules = [ ./hosts/secbox.nix ];
+          };
+
+          secbox-laptop = {
+            arch = "x86_64";
+            class = "nixos";
+            deployable = true;
+            modules = [ ./hosts/secbox-laptop.nix ];
+          };
         };
       };
     };
