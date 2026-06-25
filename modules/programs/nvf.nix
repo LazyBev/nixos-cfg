@@ -29,7 +29,7 @@
         cursorline = true;
         clipboard = "unnamedplus";
       };
-      theme = { enable = true; name = "dracula"; };
+      theme = { enable = true; name = "base16"; };
       lsp = {
         enable = true;
         formatOnSave = true;
@@ -78,7 +78,7 @@
       telescope.enable = true;
       tabline.nvimBufferline.enable = true;
       filetree.neo-tree.enable = true;
-      statusline.lualine = { enable = true; theme = "auto"; };
+      statusline.lualine = { enable = true; theme = "base16"; };
       dashboard.alpha = { enable = true; theme = "dashboard"; };
       git = { enable = true; gitsigns.enable = true; neogit.enable = true; };
       comments.comment-nvim.enable = true;

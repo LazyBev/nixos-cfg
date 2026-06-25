@@ -14,5 +14,4 @@
     "systemd.show_status=error"
   ];
   boot.plymouth.enable = true;
-  boot.plymouth.theme = "spinner";
 }

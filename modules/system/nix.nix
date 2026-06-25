@@ -1,4 +1,4 @@
-{ config, ... }: {
+{ config, inputs, ... }: {
   nix.settings = {
     experimental-features = [ "nix-command" "flakes" ];
     trusted-users = [ "yari" ];
@@ -29,6 +29,7 @@
     (import ../../overlays/caelus-theme.nix)
     (import ../../overlays/beaker.nix)
     (import ../../overlays/pragmasevka.nix)
+    inputs.ribbon.overlays.default
   ];
   nix.gc = {
     automatic = true;
