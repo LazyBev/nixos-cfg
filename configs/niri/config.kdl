@@ -63,11 +63,6 @@ workspace "8"
 workspace "9"
 
 window-rule {
-    match app-id="zen$" title="^Picture-in-Picture$"
-    open-floating true
-}
-
-window-rule {
     match title="^Picture-in-Picture$"
     open-floating true
 }
@@ -142,10 +137,7 @@ binds {
     Alt+Shift+T      { spawn "thunar"; }
     Alt+E            { spawn "alacritty" "-e" "nvim"; }
     Alt+Shift+E      { spawn "codium"; }
-    Alt+Ctrl+B       { spawn "/home/yari/.local/bin/beverage-shell" "pour"; }
-    Alt+Ctrl+Shift+B { spawn "/home/yari/.local/bin/beverage-shell" "stop"; }
-    Alt+S            { spawn "alacritty" "-e" "rmpc"; }
-    Alt+Shift+S      { spawn "steam"; }
+    Alt+S      { spawn "steam"; }
     Alt+V            { spawn "alacritty" "-e" "btop"; }
     Alt+Shift+V      { spawn "vesktop"; }
     Alt+D            { spawn "bemenu-run"; }
@@ -222,9 +214,6 @@ binds {
     XF86AudioPlay        { spawn "playerctl" "play-pause"; }
     XF86AudioNext        { spawn "playerctl" "next"; }
     XF86AudioPrev        { spawn "playerctl" "previous"; }
-    Alt+Ctrl+Space       { spawn "playerctl" "play-pause"; }
-    Alt+Ctrl+L           { spawn "playerctl" "next"; }
-    Alt+Ctrl+H           { spawn "playerctl" "previous"; }
 
     XF86MonBrightnessUp   { spawn "brightnessctl" "set" "10%+"; }
     XF86MonBrightnessDown { spawn "brightnessctl" "set" "10%-"; }

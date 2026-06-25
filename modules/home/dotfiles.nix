@@ -19,6 +19,7 @@
     ".config/qutebrowser/config.py".source = ../../configs/qutebrowser/config.py;
     ".config/qutebrowser/styles/youtube.css".source = ../../configs/qutebrowser/styles/youtube.css;
     ".config/rmpc/config.ron".source = ../../configs/rmpc/config.ron;
+    ".config/rmpc/theme.ron".source = ../../configs/rmpc/theme.ron;
     ".config/vesktop/settings.json".source = ../../configs/vesktop/vencord-settings.json;
     ".config/yazi/yazi.toml".source = ../../configs/yazi/yazi.toml;
     ".config/yazi/keymap.toml".source = ../../configs/yazi/keymap.toml;
@@ -83,6 +84,8 @@
     "Pictures/matikanefuku.png".source = ../../configs/Pictures/matikanefuku.png;
     "Pictures/todo.png".source = ../../configs/Pictures/todo.png;
     "Pictures/yellow_burber_wall1.png".source = ../../configs/Pictures/yellow_burber_wall1.png;
+
+    "Music".source = ../../configs/Music;
 
     ".config/librewolf/librewolf/profiles.ini".text = ''
       [Profile0]

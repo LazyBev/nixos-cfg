@@ -27,3 +27,5 @@ user_pref("dom.webaudio.enabled", false);
 user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);
 user_pref("ui.systemUsesDarkTheme", 1);
 user_pref("widget.content.allow-gtk-dark-theme", true);
+
+user_pref("browser.urlbar.placeholderName", "OmniSearch");
