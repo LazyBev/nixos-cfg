@@ -66,6 +66,7 @@ in {
     ocaml
     odin
     ripgrep
+    rlwrap
     rustc
     swaybg
     unar
@@ -105,6 +106,7 @@ in {
     impala-nm
     inputs.ribbon.packages.${pkgs.stdenv.hostPlatform.system}.default
     usbutils
+    libnotify
   ];
 }
 
