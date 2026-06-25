@@ -122,7 +122,6 @@ environment {
 spawn-at-startup "xwayland-satellite"
 spawn-at-startup "fcitx5" "-d"
 spawn-at-startup "dunst"
-spawn-at-startup "ribbon"
 spawn-at-startup "bash" "-lc" "sleep 1 && nm-applet --indicator"
 spawn-at-startup "bash" "-lc" "swaybg -i ~/Pictures/matikanefuku.png"
 
@@ -143,12 +142,13 @@ binds {
     Alt+D            { spawn "bemenu-run"; }
     Alt+Y            { spawn "waypaper"; }
     Alt+Z            { spawn "alacritty" "-e" "impala-nm"; }
+    Alt+Ctrl+M       { spawn "alacritty" "-e" "rmpc"; }
 
     Mod+Shift+L      { spawn "gtklock" "-s" "/home/yari/.config/gtklock/style.css" "-b" "/home/yari/Pictures/matikanefuku.png"; }
     Mod+Shift+P      { spawn "shutdown" "now"; }
     Mod+Ctrl+P       { spawn "reboot"; }
-    Alt+U            { spawn "ribbon"; }
-    Alt+Shift+U      { spawn "ribbon" "kill"; }
+    Alt+U            { spawn "systemctl" "--user" "restart" "ribbon"; }
+    Alt+Shift+U      { spawn "systemctl" "--user" "stop" "ribbon"; }
     Alt+Shift+Backspace { quit; }
 
     Alt+X            { screenshot; }

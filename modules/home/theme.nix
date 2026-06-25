@@ -1,11 +1,7 @@
 { config, pkgs, lib, ... }: let
   vars = config.vars;
 in {
-  qt = {
-    enable = true;
-    platformTheme = "gtk2";
-    style = "adwaita-dark";
-  };
+  qt.enable = true;
 
   programs.dconf = {
     enable = true;

@@ -24,6 +24,10 @@
       url = "https://git.bwaaa.monster/omnisearch/snapshot/master.tar.gz";
     };
     ribbon.url = "github:LazyBev/ribbon";
+    stylix = {
+      url = "github:nix-community/stylix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = inputs @ { flake-parts, nixpkgs, ... }:
@@ -41,6 +45,7 @@
             inherit inputs;
             inherit (inputs)
               omnisearch
+              stylix
               ;
           };
         };
@@ -58,6 +63,7 @@
               inputs.nvf.nixosModules.default
               inputs.nix-flatpak.nixosModules.nix-flatpak
               inputs.omnisearch.nixosModules.default
+              inputs.stylix.nixosModules.stylix
               ./modules
             ];
           };

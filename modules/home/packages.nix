@@ -104,7 +104,7 @@ in {
     astroterm
     caligula
     impala-nm
-    inputs.ribbon.packages.${pkgs.stdenv.hostPlatform.system}.default
+    pkgs.ribbon
     usbutils
     libnotify
   ];
