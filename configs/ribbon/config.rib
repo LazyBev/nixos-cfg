@@ -8,7 +8,7 @@
 (bar.set-logo-size 24)
 (bar.set-widget-gap 0)
 (bar.set-left distro-logo)
-(bar.set-center clock txt " | " (!"date '+%A %d %Z'"))
+(bar.set-center clock txt " | " (!"date '+%B %A %d %Z %Y'"))
 (bar.set-right (battery fmt "Bat: {}") txt " " battery-state txt " | " (cpu fmt "CPU: {}") txt " | " (memory fmt "Mem: {}") txt " | " (volume fmt "VOL: {}") txt " | " (wifi fmt "SSID: {}"))
 ; no systray currently — on the roadmap
 (bar.pad left 8)

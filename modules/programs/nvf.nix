@@ -108,6 +108,13 @@
       notes.todo-comments.enable = true;
       terminal.toggleterm = { enable = true; lazygit.enable = true; };
       luaConfigPost = ''
+        vim.g.rustaceanvim = {
+          server = {
+            extraEnv = {
+              PATH = "/home/yari/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin:" .. (vim.fn.getenv("PATH") or "")
+            }
+          }
+        }
         local actions = require("telescope.actions")
         local action_state = require("telescope.actions.state")
         local function create_file(prompt_bufnr)
