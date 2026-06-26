@@ -207,6 +207,11 @@ binds {
     Alt+Shift+N      { move-column-to-workspace-up; }
     Alt+Shift+M      { move-column-to-workspace-down; }
 
+    Alt+Ctrl+F      { spawn "fanboost"; }
+    Alt+Ctrl+Shift+F { spawn "fanauto"; }
+    Alt+Ctrl+Up     { spawn "fanup"; }
+    Alt+Ctrl+Down   { spawn "fandown"; }
+
     XF86AudioRaiseVolume { spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "0.1+"; }
     XF86AudioLowerVolume { spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "0.1-"; }
     XF86AudioMute        { spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SINK@" "toggle"; }

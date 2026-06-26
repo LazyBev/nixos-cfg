@@ -79,6 +79,8 @@ in {
     gajim
     signal-desktop
     rmpc
+    torsocks
+    thunderbird
     thunar
     vesktop
     vscodium
@@ -91,12 +93,12 @@ in {
     gh
     ghc
     go
-
     just
     tree
     zoxide
     cargo
     catppuccin-cursors
+    hashcat
 
     devenv
     eza
@@ -143,14 +145,21 @@ in {
     inotify-tools
     android-tools
     brightnessctl
+    proxychains
+    openssl
     pastel
     rsync
     dysk
     astroterm
     caligula
     impala-nm
+    weechat
+    catgirl
+    ii
     pkgs.ribbon
     usbutils
     libnotify
+    libpcap
+    pkg-config
   ];
 }

@@ -1,0 +1,4 @@
+# irssi connects to the .onion directly via torsocks.
+# TLS hostname verification is disabled because the server cert is for
+# palladium.libera.chat, not the .onion address.
+# The .onion address itself is cryptographic verification of server identity.

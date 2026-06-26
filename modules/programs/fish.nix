@@ -77,6 +77,28 @@
         nix store optimise
       end
 
+      function irc
+        weechat $argv
+      end
+
+      function catgirl
+        command catgirl config $argv
+      end
+
+      function endtor
+        doas pkill -9 -x tor 2>/dev/null
+        or doas kill -9 (pgrep -x tor 2>/dev/null) 2>/dev/null
+        echo "tor killed"
+      end
+
+      function iftor
+        if curl -sL --socks5 127.0.0.1:9050 https://check.torproject.org/ | rg -q "Congratulations"
+          echo "Connected to the internet via tor"
+        else
+          echo "Not connected to the internet via tor"
+        end
+      end
+
       function dev
         if test (count $argv) -lt 2
           echo "Usage: dev <config-dir> <language>"
@@ -90,6 +112,11 @@
         end
         cd "$dir"
         devenv shell
+      end
+
+      function tor --wraps tor --description 'Start tor daemon in background'
+        command tor -f ~/.torrc $argv &
+        disown
       end
     '';
     shellAliases = {

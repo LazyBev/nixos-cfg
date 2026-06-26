@@ -10,8 +10,9 @@
   hardware.cpu.amd.updateMicrocode = true;
   hardware.cpu.intel.updateMicrocode = true;
 
+  boot.extraModulePackages = with config.boot.kernelPackages; [ msi-ec ];
   boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "nvme" "usb_storage" "sd_mod" "vmd" "usbhid" ];
-  boot.kernelModules = [ "kvm-amd" "kvm-intel" "fuse" ];
+  boot.kernelModules = [ "kvm-amd" "kvm-intel" "fuse" "msi-ec" ];
 
   fileSystems."/" = {
     device = "/dev/disk/by-label/nixos";
@@ -61,5 +62,12 @@
     motherboard = "amd";
   };
 
+  environment.systemPackages = [ pkgs.ocl-icd ];
   environment.etc."xmrig/config.json".source = lib.mkForce ../configs/xmrig/config-unified.json;
+
+  services.nbfc = {
+    enable = true;
+    modelName = "Cyborg 15 A12UDX";
+    modelConfig = ../configs/nbfc/cyborg-15-a12udx.json;
+  };
 }
