@@ -62,6 +62,8 @@
   '';
 in {
   hjem.users.yari.packages = with pkgs; [
+    kitty
+    kitty-img
     alacritty
     btop
     bitwarden-desktop
@@ -81,7 +83,7 @@ in {
     rmpc
     torsocks
     thunderbird
-    thunar
+    nemo
     vesktop
     vscodium
     yazi
@@ -99,7 +101,12 @@ in {
     cargo
     catppuccin-cursors
     hashcat
-
+    flex
+    byacc
+    bison
+    ncurses
+    ncurses5
+    ncdu
     devenv
     eza
     gtklock
@@ -125,14 +132,14 @@ in {
     which
     zathura
     zig
-
+    briar-desktop
     opencode
     keepassxc
     proton-vpn
     proton-vpn-cli
     protonmail-desktop
     gpu-screen-recorder
-
+    gnumake
     monero-cli
     monero-gui
     xmrig
@@ -140,14 +147,21 @@ in {
     qbittorrent
     tor
     tor-browser
+    arti
+    help2man
+    clamav
     xwayland-satellite
     ucspi-tcp
     inotify-tools
+    iw
+    bind
+    dnsutils
     android-tools
     brightnessctl
     proxychains
     openssl
     pastel
+    (python3.withPackages (ps: [ps.pip ps.psutil ps.textual]))
     rsync
     dysk
     astroterm
