@@ -7,7 +7,7 @@ in {
     XCURSOR_SIZE = "${toString vars.cursorSize}";
     EDITOR = "nvim";
     VISUAL = "nvim";
-    TERMINAL = "alacritty";
+    TERMINAL = "kitty";
     BROWSER = "qutebrowser";
     NIXOS_FLAKE = vars.flakeDir;
     FZF_DEFAULT_OPTS = "--color='fg:#f8f8f2,bg:#282a36,hl:#bd93f9' --color='fg+:#f8f8f2,bg+:#424450,hl+:#bd93f9' --color='info:#ffb86c,prompt:#50fa7b,pointer:#50fa7b' --color='marker:#f1fa8c,spinner:#f1fa8c,header:#6272a4'";

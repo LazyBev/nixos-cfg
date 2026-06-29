@@ -44,3 +44,5 @@ blink_interval = 1000
 
 [selection]
 save_to_clipboard = true
+
+

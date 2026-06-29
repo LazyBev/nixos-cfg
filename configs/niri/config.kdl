@@ -83,8 +83,8 @@ window-rule {
 }
 
 window-rule {
-    match app-id="^thunar$"
-    default-column-width { proportion 0.5; }
+    match app-id="^nemo$"
+    default-column-width { proportion 1.0; }
 }
 
 window-rule {
@@ -133,7 +133,7 @@ binds {
     Alt+B            { spawn "qutebrowser"; }
     Alt+Shift+B      { spawn "librewolf"; }
     Alt+T            { spawn "alacritty" "-e" "yazi"; }
-    Alt+Shift+T      { spawn "thunar"; }
+    Alt+Shift+T      { spawn "nemo"; }
     Alt+E            { spawn "alacritty" "-e" "nvim"; }
     Alt+Shift+E      { spawn "codium"; }
     Alt+S      { spawn "steam"; }
