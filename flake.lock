@@ -288,11 +288,11 @@
         "xwayland-satellite-unstable": "xwayland-satellite-unstable"
       },
       "locked": {
-        "lastModified": 1782327702,
-        "narHash": "sha256-+DIANQHyF4ktUsEpNeAo9qn6UfPp6P8WhRd5ccKFeJo=",
+        "lastModified": 1782519837,
+        "narHash": "sha256-0TF7/XeFQihYvwe4L1Y2ujpwyAIpgXwrt3jzOaw5Y6g=",
         "ref": "refs/heads/main",
-        "rev": "15c2a53a6720a9d6bf392200d141194deaae10de",
-        "revCount": 134,
+        "rev": "31d15bc6c5f3f84256335b34592cda2d4104c9eb",
+        "revCount": 135,
         "type": "git",
         "url": "https://codeberg.org/BANanaD3V/niri-nix"
       },
@@ -432,11 +432,11 @@
         "systems": "systems"
       },
       "locked": {
-        "lastModified": 1782369036,
-        "narHash": "sha256-jxbvrIvE+NklSd6HPNSdEhGr8RvwNj4b7Gd5tgEXwSQ=",
+        "lastModified": 1782660650,
+        "narHash": "sha256-d4Ndt82q9bhL+iKFr1reufZyE/MTdULzN3kEkXsNG88=",
         "owner": "notashelf",
         "repo": "neovim-flake",
-        "rev": "096045d0e927bf7064989e9181a89b47c1b8779c",
+        "rev": "18d2d23191250c7f597d85da07d860eb05f9e1be",
         "type": "github"
       },
       "original": {
@@ -467,11 +467,11 @@
         "nixpkgs": "nixpkgs_3"
       },
       "locked": {
-        "lastModified": 1782764988,
-        "narHash": "sha256-Trco9L9wUEUfHnytxGTCquprQ3K6zviciYWDQ9dc2BE=",
+        "lastModified": 1782773267,
+        "narHash": "sha256-jR2vewUPWvL8QsOQypEeeJpDM6gmDLcxwuqVV7SEehs=",
         "owner": "LazyBev",
         "repo": "ribbon",
-        "rev": "e236f5646fed6cff8781b9d627ddf868cd346607",
+        "rev": "b60d8f50ad83521dada273ff61629f8b8e9be223",
         "type": "github"
       },
       "original": {
@@ -514,11 +514,11 @@
         "tinted-zed": "tinted-zed"
       },
       "locked": {
-        "lastModified": 1782310521,
-        "narHash": "sha256-vsxcG0i8e4EPfdnhMTKMVzD1825H2vG1BBslzom9wxg=",
+        "lastModified": 1782767190,
+        "narHash": "sha256-s2yafct3p8HtKax0012ASfekxxPMS1b+ObMskwmFio4=",
         "owner": "nix-community",
         "repo": "stylix",
-        "rev": "e084d011e7ee9302aceaaf6c1fc28a9ace09e16a",
+        "rev": "a1fdfdcd52d8a09b217b8c41e1edf54b8a2196b1",
         "type": "github"
       },
       "original": {
