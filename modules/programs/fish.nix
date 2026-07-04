@@ -118,6 +118,81 @@
         command tor -f ~/.torrc $argv &
         disown
       end
+
+      function record --description 'Record screen with audio using wf-recorder'
+        set output_dir ~/Videos
+        set timestamp (date +%Y-%m-%d_%H-%M-%S)
+        set filename "$output_dir/recording_$timestamp.mp4"
+        set output_name eDP-1
+        set geometry ""
+        set no_audio 0
+
+        argparse s/select A/area= o/output= f/file= a/no-audio h/help -- $argv
+        or return
+
+        if set -q _flag_help
+            echo "Usage: record [OPTIONS]"
+            echo ""
+            echo "Record screen with audio using wf-recorder."
+            echo ""
+            echo "Options:"
+            echo "  -o, --output <NAME>  Output to record (default: eDP-1)"
+            echo "  -s, --select         Select a region to record (uses slurp)"
+            echo "  -A, --area <GEO>     Specify geometry (e.g. '1920x1080+0+0')"
+            echo "  -f, --file <FILE>    Output filename (default: ~/Videos/recording_<timestamp>.mp4)"
+            echo "  -a, --no-audio       Record without audio"
+            echo "  -h, --help           Show this help"
+            return 0
+        end
+
+        if set -q _flag_file
+            set filename $_flag_file
+        end
+
+        if set -q _flag_output
+            set output_name $_flag_output
+        end
+
+        if set -q _flag_area
+            set geometry $_flag_area
+        end
+
+        if set -q _flag_select
+            if not command -q slurp
+                notify-send -u critical "record: slurp not found" "Install slurp to use region selection"
+                return 1
+            end
+            set geometry (slurp)
+        end
+
+        if set -q _flag_no_audio
+            set no_audio 1
+        end
+
+        mkdir -p $output_dir
+
+        notify-send -t 2000 "Recording starting" "Saving to $filename"
+
+        if test $no_audio -eq 1
+            if test -n "$geometry"
+                wf-recorder -o $output_name -g "$geometry" -f "$filename"
+            else
+                wf-recorder -o $output_name -f "$filename"
+            end
+        else
+            if test -n "$geometry"
+                wf-recorder --audio -o $output_name -g "$geometry" -f "$filename"
+            else
+                wf-recorder --audio -o $output_name -f "$filename"
+            end
+        end
+
+        if test $status -eq 0
+            notify-send -t 3000 "Recording saved" "$filename"
+        else
+            notify-send -u critical "Recording failed" "wf-recorder exited with status $status"
+        end
+      end
     '';
     shellAliases = {
       cat = "bat -p";

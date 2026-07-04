@@ -61,7 +61,13 @@
     exec ${pkgs.librewolf}/bin/librewolf --profile /home/yari/.config/librewolf/librewolf/nhjvl52u.i2p --no-remote "$@"
   '';
 in {
-  hjem.users.yari.packages = with pkgs; [
+  hjem.users.yari = {
+    environment.sessionVariables = {
+      PKG_CONFIG_PATH = "/etc/profiles/per-user/yari/lib/pkgconfig";
+      LIBRARY_PATH = "/etc/profiles/per-user/yari/lib";
+    };
+
+    packages = with pkgs; [
     kitty
     kitty-img
     alacritty
@@ -169,11 +175,18 @@ in {
     impala-nm
     weechat
     catgirl
+    raylib
     ii
     pkgs.ribbon
     usbutils
     libnotify
     libpcap
     pkg-config
-  ];
+
+    fasm
+    ffmpeg
+    slurp
+    wf-recorder
+    ];
+  };
 }
