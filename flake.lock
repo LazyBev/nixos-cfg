@@ -288,11 +288,11 @@
         "xwayland-satellite-unstable": "xwayland-satellite-unstable"
       },
       "locked": {
-        "lastModified": 1782519837,
-        "narHash": "sha256-0TF7/XeFQihYvwe4L1Y2ujpwyAIpgXwrt3jzOaw5Y6g=",
+        "lastModified": 1783040321,
+        "narHash": "sha256-XW5pblwi3OwT7rDZdR7yftZGLFx3drbSwMQqwz5vLJ8=",
         "ref": "refs/heads/main",
-        "rev": "31d15bc6c5f3f84256335b34592cda2d4104c9eb",
-        "revCount": 135,
+        "rev": "cccef4df3e172c4945285cb93a2789b74bb1a31e",
+        "revCount": 136,
         "type": "git",
         "url": "https://codeberg.org/BANanaD3V/niri-nix"
       },
@@ -432,11 +432,11 @@
         "systems": "systems"
       },
       "locked": {
-        "lastModified": 1782841360,
-        "narHash": "sha256-S1f/S5Vv7wURVUtzPkmAFlKPVciaPLXxoeg7/GCnl28=",
+        "lastModified": 1783065377,
+        "narHash": "sha256-TR9M4Gl/ibvrpLsheOlaNQRam6fzfNq9Mthw/j6ZniU=",
         "owner": "notashelf",
         "repo": "neovim-flake",
-        "rev": "6fad9e9a998dd3a7783c839ce2928877d3e5a883",
+        "rev": "11985bb991c885e4e47df6bea8fa8d03fc6ba2ab",
         "type": "github"
       },
       "original": {
