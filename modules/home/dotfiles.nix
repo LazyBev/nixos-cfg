@@ -27,6 +27,15 @@
     ".config/zellij/config.kdl".source = ../../configs/zellij/config.kdl;
     ".torrc".source = ../../configs/tor/torrc;
     ".config/catgirl/config".source = ../../configs/catgirl/config;
+    ".config/asm-lsp/.asm-lsp.toml".text = ''
+      [default_config]
+      assembler = "fasm"
+      instruction_set = "x86/x86-64"
+
+      [default_config.opts]
+      diagnostics = true
+      default_diagnostics = true
+    '';
     ".config/bat/config".text = "--theme=ansi";
     ".config/gtk-3.0/settings.ini".text = ''
       [Settings]

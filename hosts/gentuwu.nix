@@ -1,4 +1,10 @@
-{ config, lib, pkgs, inputs, ... }: {
+{
+  config,
+  lib,
+  pkgs,
+  inputs,
+  ...
+}: {
   networking.hostName = "gentuwu";
 
   programs.appimage = {
@@ -9,10 +15,11 @@
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   hardware.cpu.amd.updateMicrocode = true;
   hardware.cpu.intel.updateMicrocode = true;
+  hardware.opentabletdriver.enable = true;
 
-  boot.extraModulePackages = with config.boot.kernelPackages; [ msi-ec ];
-  boot.initrd.availableKernelModules = [ "xhci_pci" "ahci" "nvme" "usb_storage" "sd_mod" "vmd" "usbhid" ];
-  boot.kernelModules = [ "kvm-amd" "kvm-intel" "fuse" "msi-ec" ];
+  boot.extraModulePackages = with config.boot.kernelPackages; [msi-ec];
+  boot.initrd.availableKernelModules = ["xhci_pci" "ahci" "nvme" "usb_storage" "sd_mod" "vmd" "usbhid"];
+  boot.kernelModules = ["kvm-amd" "kvm-intel" "fuse" "msi-ec"];
 
   fileSystems."/" = {
     device = "/dev/disk/by-label/nixos";
@@ -23,11 +30,13 @@
     fsType = "vfat";
   };
 
-  swapDevices = [{
-    device = "/dev/disk/by-label/swap";
-  }];
+  swapDevices = [
+    {
+      device = "/dev/disk/by-label/swap";
+    }
+  ];
 
-  boot.kernelParams = [ "nvidia_drm.modeset=1" ];
+  boot.kernelParams = ["nvidia_drm.modeset=1"];
 
   hardware.nvidia = {
     modesetting.enable = true;
@@ -36,10 +45,10 @@
     nvidiaSettings = false;
     package = config.boot.kernelPackages.nvidiaPackages.stable;
   };
-  services.xserver.videoDrivers = [ "nvidia" ];
+  services.xserver.videoDrivers = ["nvidia"];
 
   virtualisation.docker.enable = true;
-  users.users.yari.extraGroups = [ "kvm" "libvirtd" "docker" ];
+  users.users.yari.extraGroups = ["kvm" "libvirtd" "docker"];
 
   services.mpd = {
     enable = true;
@@ -62,7 +71,7 @@
     motherboard = "amd";
   };
 
-  environment.systemPackages = [ pkgs.ocl-icd ];
+  environment.systemPackages = [pkgs.ocl-icd];
   environment.etc."xmrig/config.json".source = lib.mkForce ../configs/xmrig/config-unified.json;
 
   services.nbfc = {
