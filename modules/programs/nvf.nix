@@ -8,6 +8,11 @@
       extraPackages = with pkgs; [
         wl-clipboard
         nil
+        asm-lsp
+        tree-sitter
+        rust-analyzer
+        ripgrep
+        fd
       ];
       opts = {
         number = true;
@@ -108,6 +113,15 @@
       notes.todo-comments.enable = true;
       terminal.toggleterm = { enable = true; lazygit.enable = true; };
       luaConfigPost = ''
+        vim.filetype.add({ extension = { fasm = "asm" } })
+        vim.lsp.config["asm-lsp"] = {
+          cmd = {"asm-lsp"};
+          filetypes = {"asm", "s", "S"};
+          root_markers = {".git"};
+        }
+        vim.lsp.enable("asm-lsp")
+        vim.treesitter.language.register("asm", {"fasm"})
+
         vim.g.rustaceanvim = {
           server = {
             extraEnv = {
