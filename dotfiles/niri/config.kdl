@@ -123,7 +123,7 @@ spawn-at-startup "xwayland-satellite"
 spawn-at-startup "fcitx5" "-d"
 spawn-at-startup "dunst"
 spawn-at-startup "bash" "-lc" "sleep 1 && nm-applet --indicator"
-spawn-at-startup "mpvpaper" "-o" "no-audio loop" "*" "/home/yari/.config/niri/wallpaper.mp4"
+spawn-at-startup "swaybg" "-i" "/home/yari/.config/niri/matikanefuku.png" "-m" "fill"
 
 binds {
     Alt+Shift+Slash { show-hotkey-overlay; }

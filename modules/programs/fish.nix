@@ -4,6 +4,7 @@
     interactiveShellInit = ''
       set -gx LIBVIRT_DEFAULT_URI qemu:///system
       set -g fish_greeting
+set -gx EZA_COLORS "di=96:fi=37:ex=92:ln=95:or=91:mi=91:su=93:sf=93:wu=93:sg=93:pi=93:so=93:bd=94:cd=94"
 
       function doas --wraps doas
         if test "$argv" = "!!"

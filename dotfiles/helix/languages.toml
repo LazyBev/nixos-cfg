@@ -1,0 +1,157 @@
+[language-server.asm-lsp]
+command = "asm-lsp"
+
+[[language]]
+name = "asm"
+scope = "source.asm"
+language-servers = ["asm-lsp"]
+file-types = ["asm", "s", "S", "fasm"]
+
+[[language]]
+name = "nix"
+scope = "source.nix"
+auto-format = true
+formatter = { command = "nixfmt", args = [] }
+
+[[language]]
+name = "rust"
+scope = "source.rust"
+auto-format = true
+
+[[language]]
+name = "odin"
+scope = "source.odin"
+file-types = ["odin"]
+language-servers = ["ols"]
+
+[language-server.ols]
+command = "ols"
+
+[[language]]
+name = "zig"
+scope = "source.zig"
+file-types = ["zig"]
+
+[grammar]
+name = "rust"
+source = { git = "https://github.com/tree-sitter/tree-sitter-rust", rev = "v0.21.0" }
+
+[[grammar]]
+name = "nix"
+source = { git = "https://github.com/nix-community/tree-sitter-nix", rev = "v0.1.0" }
+
+[[grammar]]
+name = "asm"
+source = { git = "https://github.com/tree-sitter-grammars/tree-sitter-asm", rev = "v0.1.0" }
+
+[[grammar]]
+name = "python"
+source = { git = "https://github.com/tree-sitter/tree-sitter-python", rev = "v0.21.0" }
+
+[[grammar]]
+name = "bash"
+source = { git = "https://github.com/tree-sitter/tree-sitter-bash", rev = "v0.21.0" }
+
+[[grammar]]
+name = "json"
+source = { git = "https://github.com/tree-sitter/tree-sitter-json", rev = "v0.21.0" }
+
+[[grammar]]
+name = "toml"
+source = { git = "https://github.com/tree-sitter/tree-sitter-toml", rev = "v0.6.0" }
+
+[[grammar]]
+name = "yaml"
+source = { git = "https://github.com/ikatyang/tree-sitter-yaml", rev = "v0.6.0" }
+
+[[grammar]]
+name = "c"
+source = { git = "https://github.com/tree-sitter/tree-sitter-c", rev = "v0.21.0" }
+
+[[grammar]]
+name = "cpp"
+source = { git = "https://github.com/tree-sitter/tree-sitter-cpp", rev = "v0.21.0" }
+
+[[grammar]]
+name = "html"
+source = { git = "https://github.com/tree-sitter/tree-sitter-html", rev = "v0.21.0" }
+
+[[grammar]]
+name = "css"
+source = { git = "https://github.com/tree-sitter/tree-sitter-css", rev = "v0.21.0" }
+
+[[grammar]]
+name = "javascript"
+source = { git = "https://github.com/tree-sitter/tree-sitter-javascript", rev = "v0.21.0" }
+
+[[grammar]]
+name = "typescript"
+source = { git = "https://github.com/tree-sitter/tree-sitter-typescript", rev = "v0.21.0" }
+
+[[grammar]]
+name = "markdown"
+source = { git = "https://github.com/tree-sitter-grammars/tree-sitter-markdown", rev = "v0.2.0" }
+
+[[grammar]]
+name = "go"
+source = { git = "https://github.com/tree-sitter/tree-sitter-go", rev = "v0.21.0" }
+
+[[grammar]]
+name = "lua"
+source = { git = "https://github.com/MunifTanjim/tree-sitter-lua", rev = "v0.1.0" }
+
+[[grammar]]
+name = "fish"
+source = { git = "https://github.com/ram02z/tree-sitter-fish", rev = "v0.2.0" }
+
+[[grammar]]
+name = "make"
+source = { git = "https://github.com/tree-sitter-grammars/tree-sitter-make", rev = "v0.1.0" }
+
+[[grammar]]
+name = "diff"
+source = { git = "https://github.com/the-mikedavis/tree-sitter-diff", rev = "v0.1.0" }
+
+[[grammar]]
+name = "sql"
+source = { git = "https://github.com/tree-sitter-grammars/tree-sitter-sql", rev = "v0.2.0" }
+
+[[grammar]]
+name = "comment"
+source = { git = "https://github.com/stsewd/tree-sitter-comment", rev = "v0.2.0" }
+
+[[grammar]]
+name = "git-commit"
+source = { git = "https://github.com/the-mikedavis/tree-sitter-git-commit", rev = "v0.1.0" }
+
+[[grammar]]
+name = "git-config"
+source = { git = "https://github.com/the-mikedavis/tree-sitter-git-config", rev = "v0.1.0" }
+
+[[grammar]]
+name = "git-rebase"
+source = { git = "https://github.com/the-mikedavis/tree-sitter-git-rebase", rev = "v0.1.0" }
+
+[[grammar]]
+name = "git-diff"
+source = { git = "https://github.com/the-mikedavis/tree-sitter-diff", rev = "v0.1.0" }
+
+[[grammar]]
+name = "dockerfile"
+source = { git = "https://github.com/camdencheek/tree-sitter-dockerfile", rev = "v0.1.0" }
+
+[[grammar]]
+name = "kdl"
+source = { git = "https://github.com/tree-sitter-grammars/tree-sitter-kdl", rev = "v0.1.0" }
+
+[[grammar]]
+name = "regex"
+source = { git = "https://github.com/tree-sitter/tree-sitter-regex", rev = "v0.21.0" }
+
+[[grammar]]
+name = "odin"
+source = { git = "https://github.com/mattts/tree-sitter-odin", rev = "v1.0.1" }
+
+[[grammar]]
+name = "zig"
+source = { git = "https://github.com/tree-sitter-grammars/tree-sitter-zig", rev = "v0.1.0" }
