@@ -20,3 +20,6 @@ result-*
 *.swp
 *.swo
 *.o
+
+# large media
+media/Videos/

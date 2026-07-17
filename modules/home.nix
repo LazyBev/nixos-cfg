@@ -132,10 +132,10 @@ in {
 
     files = {
       ".config/niri/config.kdl".source = ../dotfiles/niri/config.kdl;
+      ".config/niri/matikanefuku.png".source = ../media/Pictures/matikanefuku.png;
       ".config/ribbon/config.rib".source = ../dotfiles/ribbon/config.rib;
       ".config/hypr/hyprlock.conf".source = ../dotfiles/hypr/hyprlock.conf;
       ".config/hypr/hypridle.conf".source = ../dotfiles/hypr/hypridle.conf;
-      ".config/niri/wallpaper.mp4".source = ../media/Videos/wallpaper.mp4;
       ".config/alacritty/alacritty.toml".source = ../dotfiles/alacritty/alacritty.toml;
       ".config/zellij/config.kdl".source = ../dotfiles/zellij/config.kdl;
       ".config/bat/config".text = "--theme=ansi";
@@ -220,58 +220,8 @@ in {
       ".config/yazi/theme.toml".source = ../dotfiles/yazi/theme.toml;
       ".config/yazi/flavors/dracula.yazi/flavor.toml".source = ../dotfiles/yazi/flavors/dracula.yazi/flavor.toml;
       ".config/yazi/flavors/dracula.yazi/tmtheme.xml".source = ../dotfiles/yazi/flavors/dracula.yazi/tmtheme.xml;
-      ".config/helix/config.toml".text = ''
-        theme = "base16_terminal"
-
-        [editor]
-        line-number = "relative"
-        cursorline = true
-        color-modes = true
-        true-color = true
-        rulers = [80, 120]
-        scrolloff = 8
-        soft-wrap.enable = false
-
-        [editor.indent-guides]
-        render = true
-        character = "╎"
-
-        [editor.statusline]
-        left = ["mode", "version-control"]
-        center = ["file-name"]
-        right = ["diagnostics", "selections", "position", "file-encoding"]
-
-        [editor.lsp]
-        display-messages = true
-        display-inlay-hints = true
-
-        [keys.normal]
-        "C-s" = ":w"
-
-        [keys.insert]
-        "C-s" = ":w"
-      '';
-      ".config/helix/languages.toml".text = ''
-        [language-server.asm-lsp]
-        command = "asm-lsp"
-
-        [[language]]
-        name = "asm"
-        scope = "source.asm"
-        language-servers = ["asm-lsp"]
-        file-types = ["asm", "s", "S", "fasm"]
-
-        [[language]]
-        name = "nix"
-        scope = "source.nix"
-        auto-format = true
-        formatter = { command = "nixfmt", args = [] }
-
-        [[language]]
-        name = "rust"
-        scope = "source.rust"
-        auto-format = true
-      '';
+      ".config/helix/config.toml".source = ../dotfiles/helix/config.toml;
+      ".config/helix/languages.toml".source = ../dotfiles/helix/languages.toml;
       ".config/asm-lsp/.asm-lsp.toml".text = "[default_config]\nassembler = \"fasm\"\ninstruction_set = \"x86/x86-64\"\n[default_config.opts]\ndiagnostics = true\ndefault_diagnostics = true\n";
       ".config/fish/completions/topaz.fish".text = ''
         complete -c topaz -n "not __fish_seen_subcommand_from -s --scan -I --scan-interface -p --scan-ports -c --crack -B --bench" -f -a "-s" -d "Scan for WiFi networks"
