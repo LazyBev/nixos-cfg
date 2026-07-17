@@ -9,6 +9,10 @@ devenvs/
 **/_build/
 **/.devenv/
 
+# nix build results
+result
+result-*
+
 # macos
 .DS_Store
 

@@ -1,10 +1,12 @@
 { config, pkgs, lib, ... }: {
   imports = [
+    ../modules/miner.nix
     ../modules/users/yari.nix
-    ../modules/programs/monerod.nix
-    ../modules/programs/p2pool.nix
+    ../modules/services.nix
     ./hardware-configuration-monero-miner.nix
   ];
+
+  networking.hostName = "monero-miner";
 
   services.monerod.enable = true;
 
@@ -15,23 +17,12 @@
     extraArgs = [ "--light-mode" ];
   };
 
-  networking.hostName = "monero-miner";
-
-  boot.loader.grub.enable = true;
-  boot.loader.grub.device = "nodev";
-  boot.loader.grub.efiSupport = true;
-  boot.loader.grub.efiInstallAsRemovable = true;
-  boot.loader.efi.canTouchEfiVariables = false;
-
   boot.kernelParams = [
     "mitigations=off"
     "nmi_watchdog=0"
     "nowatchdog"
   ];
-
   boot.kernelModules = [ "msr" ];
-
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
   powerManagement.cpuFreqGovernor = lib.mkDefault "performance";
 
@@ -50,8 +41,7 @@
     nh
     vim
   ];
-
-  environment.etc."xmrig/config.json".source = ../configs/xmrig/config.json;
+  environment.etc."xmrig/config.json".source = ../dotfiles/xmrig/config.json;
 
   systemd.services.xmrig = {
     description = "Monero miner";
@@ -69,26 +59,4 @@
   };
 
   networking.firewall.allowedTCPPorts = [ 3333 37890 18081 ];
-  networking.networkmanager.enable = true;
-
-  services.openssh.enable = true;
-  services.openssh.settings.PasswordAuthentication = true;
-
-  users.users.yari.openssh.authorizedKeys.keys = [
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJnSiJZsEbeNvZzhstYIWVVA9jNWKBSvLaxE6qeN6+iZ yari@gentuwu"
-  ];
-
-  console.keyMap = "uk";
-
-  programs.fish.enable = true;
-
-  security.doas.enable = true;
-  security.doas.extraRules = [{
-    groups = [ "wheel" ];
-    persist = true;
-    keepEnv = true;
-  }];
-  security.sudo.wheelNeedsPassword = false;
-
-  system.stateVersion = "25.05";
 }

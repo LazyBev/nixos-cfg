@@ -1,0 +1,46 @@
+[window]
+opacity = 0.85
+
+[font]
+size = 15
+normal.family = "Pragmasevka Nerd Font"
+bold.family = "Pragmasevka Nerd Font"
+italic.family = "Pragmasevka Nerd Font"
+bold_italic.family = "Pragmasevka Nerd Font"
+
+[colors.primary]
+background = "#0a0a0a"
+foreground = "#e0e0e0"
+
+[colors.normal]
+black = "#1c1c1c"
+red = "#999999"
+green = "#aaaaaa"
+yellow = "#bbbbbb"
+blue = "#bbbbbb"
+magenta = "#888888"
+cyan = "#aaaaaa"
+white = "#cccccc"
+
+[colors.bright]
+black = "#2a2a2a"
+red = "#aaaaaa"
+green = "#bbbbbb"
+yellow = "#cccccc"
+blue = "#cccccc"
+magenta = "#999999"
+cyan = "#bbbbbb"
+white = "#f0f0f0"
+
+[scrolling]
+history = 10000
+
+[mouse]
+hide_when_typing = true
+
+[cursor]
+style = "Beam"
+blink_interval = 1000
+
+[selection]
+save_to_clipboard = true

@@ -22,17 +22,17 @@
     };
     theme = lib.mkOption {
       type = lib.types.str;
-      default = "Dracula";
+      default = "Monochrome";
       description = "Desktop theme name";
     };
     gtkTheme = lib.mkOption {
       type = lib.types.str;
-      default = "Dracula";
+      default = "Adwaita-dark";
       description = "GTK theme name";
     };
     cursorTheme = lib.mkOption {
       type = lib.types.str;
-      default = "catppuccin-mocha-mauve-cursors";
+      default = "Bibata-Modern-Classic";
       description = "Cursor theme name";
     };
     cursorSize = lib.mkOption {
@@ -42,12 +42,12 @@
     };
     iconTheme = lib.mkOption {
       type = lib.types.str;
-      default = "Dracula";
+      default = "Adwaita";
       description = "Icon theme name";
     };
     flakeDir = lib.mkOption {
       type = lib.types.str;
-      default = "/home/yari/nix";
+      default = "/home/yari/nixos-cfg";
       description = "Path to flake directory";
     };
     maxJobs = lib.mkOption {

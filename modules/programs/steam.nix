@@ -4,5 +4,6 @@
     remotePlay.openFirewall = false;
     dedicatedServer.openFirewall = false;
   };
+  programs.gamemode.enable = true;
   hardware.steam-hardware.enable = true;
 }

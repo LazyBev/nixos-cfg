@@ -1,4 +1,4 @@
-{ pkgs, ... }: {
+{pkgs, ...}: {
   fonts.packages = with pkgs; [
     nerd-fonts.symbols-only
     pragmasevka-nerd-font
@@ -8,7 +8,9 @@
     font-awesome
     material-design-icons
     dracula-theme
+    nerd-fonts.martian-mono
+    mpvScripts.modernz
   ];
   fonts.enableDefaultPackages = true;
-  fonts.fontconfig.defaultFonts.monospace = [ "Pragmasevka Nerd Font" ];
+  fonts.fontconfig.defaultFonts.monospace = ["Pragmasevka Nerd Font"];
 }
