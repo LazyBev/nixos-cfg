@@ -201,7 +201,7 @@
       lt = "eza -la --icons --tree --level=2";
       grep = "rg";
       py = "python3";
-      nv = "doas nvim";
+      nv = "doas hx";
       gc = "doas nix-collect-garbage -d && doas nix-collect-garbage --delete-old && nix store optimise";
     };
     shellAbbrs = {

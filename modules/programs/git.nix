@@ -8,7 +8,7 @@
       init.defaultBranch = "main";
       pull.rebase = true;
       push.autoSetupRemote = true;
-      core.editor = "nvim";
+      core.editor = "hx";
       safe.directory = "/home/yari/nixos-cfg";
     };
   };

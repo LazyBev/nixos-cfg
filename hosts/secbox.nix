@@ -2,9 +2,9 @@
   imports = [
     ../modules/system/vars.nix
     ../modules/system/nix.nix
-    ../modules/programs/secbox-common.nix
-    ../modules/programs/security-tools.nix
-    ../modules/security/tor-hardening.nix
+    ../modules/secbox-common.nix
+    ../modules/security-tools.nix
+    ../modules/security.nix
     ../modules/users/pentest.nix
   ];
 

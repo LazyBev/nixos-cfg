@@ -10,6 +10,9 @@ upgrade host:
 gc:
 	doas nix-collect-garbage --delete-older-than 30d
 
+fmt:
+	nix fmt
+
 lint:
 	nix flake check
 

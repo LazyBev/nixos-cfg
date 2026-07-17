@@ -1,20 +1,37 @@
-{ lib, ... }: let
-  inherit (builtins) readDir attrNames filter;
+{ lib, ... }: {
+  imports = [
+    ./niri.nix
+    ./portal.nix
+    ./sddm.nix
+    ./opengl.nix
+    ./pipewire.nix
+    ./power.nix
+    ./stylix.nix
+    ./home.nix
+    ./services.nix
+    ./security.nix
 
-  collectNixFiles = dir:
-    let
-      entries = readDir dir;
-      names = attrNames entries;
-      isFile = n: entries.${n} == "regular";
-      isDir = n: entries.${n} == "directory";
-      nixFiles = filter (n: isFile n && lib.hasSuffix ".nix" n && n != "default.nix") names;
-      directories = filter isDir names;
-    in
-      (map (n: dir + "/${n}") nixFiles)
-      ++ lib.flatten (map (d: collectNixFiles (dir + "/${d}")) directories);
-in {
-  imports = collectNixFiles ./.;
+    ./programs/atuin.nix
+    ./programs/direnv.nix
+    ./programs/fish.nix
+    ./programs/git.nix
+    ./programs/librewolf.nix
+    ./programs/starship.nix
+    ./programs/steam.nix
 
+    ./system/boot.nix
+    ./system/environment.nix
+    ./system/fonts.nix
+    ./system/locale.nix
+    ./system/network.nix
+    ./system/nix.nix
+    ./system/omnisearch.nix
+    ./system/vars.nix
+    ./system/virtualisation.nix
+
+    ./users/pentest.nix
+    ./users/yari.nix
+  ];
 
   nixpkgs.config = {
     allowUnfree = true;
@@ -27,4 +44,13 @@ in {
     ];
     joypixels.acceptLicense = true;
   };
+
+  nixpkgs.overlays = [
+    (final: prev: {
+      cpplint = prev.cpplint.overridePythonAttrs (_: {
+        doCheck = false;
+        doInstallCheck = false;
+      });
+    })
+  ];
 }

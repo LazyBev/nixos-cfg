@@ -3,7 +3,7 @@
     experimental-features = [ "nix-command" "flakes" ];
     trusted-users = [ "yari" ];
     max-jobs = 6;
-    build-cores = 12;
+    build-cores = 6;
     max-substitution-jobs = 16;
     keep-going = true;
     substituters = [
@@ -26,9 +26,36 @@
     ];
   };
   nixpkgs.overlays = [
-    (import ../../overlays/caelus-theme.nix)
-    (import ../../overlays/beaker.nix)
-    (import ../../overlays/pragmasevka.nix)
+    (final: prev: let
+      beaker-src = builtins.fetchGit {
+        url = "https://git.bwaaa.monster/beaker";
+        rev = "3fab89ecf8f4c664477a82add660d28db87357b4";
+      };
+    in {
+      beaker = prev.stdenv.mkDerivation {
+        pname = "beaker";
+        version = "git";
+        src = beaker-src;
+        makeFlags = [ "INSTALL_PREFIX=$(out)/" "LDCONFIG=true" ];
+      };
+    })
+    (final: prev: {
+      pragmasevka-nerd-font = prev.stdenvNoCC.mkDerivation {
+        pname = "pragmasevka-nerd-font";
+        version = "1.7.0";
+        src = prev.fetchurl {
+          url = "https://github.com/shytikov/pragmasevka/releases/download/v1.7.0/Pragmasevka_NF.zip";
+          hash = "sha256-7qt1jv9WLRyu12EkRIjlZUW+Jegaa0DNhLMbAyo3YVw=";
+        };
+        nativeBuildInputs = [ prev.unzip ];
+        unpackPhase = "unzip $src -d pragmasevka";
+        installPhase = ''
+          mkdir -p $out/share/fonts/truetype
+          cp pragmasevka/*.ttf $out/share/fonts/truetype/
+        '';
+        meta.description = "Pragmasevka Nerd Font (PragmataPro doppelgänger from Iosevka)";
+      };
+    })
     inputs.ribbon.overlays.default
   ];
   nix.gc = {

@@ -13,10 +13,6 @@
       url = "github:feel-co/hjem";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    nvf = {
-      url = "github:notashelf/neovim-flake";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     nix-flatpak = {
       url = "github:gmodena/nix-flatpak/?ref=latest";
     };
@@ -36,6 +32,10 @@
 
       systems = [ "x86_64-linux" ];
 
+      perSystem = { pkgs, ... }: {
+        formatter = pkgs.nixfmt;
+      };
+
       easy-hosts = {
         useGlobalPkgs = false;
 
@@ -51,21 +51,20 @@
         };
 
         hosts = {
-          gentuwu = {
-            arch = "x86_64";
-            class = "nixos";
-            deployable = true;
-            modules = [
-              ./hosts/gentuwu.nix
-              { _module.args = { inherit inputs; inherit (inputs) omnisearch; }; }
-              inputs.niri-nix.nixosModules.default
-              inputs.hjem.nixosModules.default
-              inputs.nvf.nixosModules.default
-              inputs.nix-flatpak.nixosModules.nix-flatpak
-              inputs.omnisearch.nixosModules.default
-              inputs.stylix.nixosModules.stylix
-              ./modules
-            ];
+            gentuwu = {
+              arch = "x86_64";
+              class = "nixos";
+              deployable = true;
+              modules = [
+                ./hosts/gentuwu.nix
+                { _module.args = { inherit inputs; inherit (inputs) omnisearch; }; }
+                inputs.niri-nix.nixosModules.default
+                inputs.hjem.nixosModules.default
+                inputs.nix-flatpak.nixosModules.nix-flatpak
+                inputs.omnisearch.nixosModules.default
+                inputs.stylix.nixosModules.stylix
+                ./modules
+              ];
           };
 
           worker-vic = {

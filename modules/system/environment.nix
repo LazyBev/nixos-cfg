@@ -5,12 +5,13 @@ in {
     GTK_THEME = vars.gtkTheme;
     XCURSOR_THEME = vars.cursorTheme;
     XCURSOR_SIZE = "${toString vars.cursorSize}";
-    EDITOR = "nvim";
-    VISUAL = "nvim";
-    TERMINAL = "kitty";
+    EDITOR = "hx";
+    VISUAL = "hx";
+    TERMINAL = "alacritty";
     BROWSER = "qutebrowser";
     NIXOS_FLAKE = vars.flakeDir;
-    FZF_DEFAULT_OPTS = "--color='fg:#f8f8f2,bg:#282a36,hl:#bd93f9' --color='fg+:#f8f8f2,bg+:#424450,hl+:#bd93f9' --color='info:#ffb86c,prompt:#50fa7b,pointer:#50fa7b' --color='marker:#f1fa8c,spinner:#f1fa8c,header:#6272a4'";
+    EZA_COLORS = "di=37:fi=90";
+    FZF_DEFAULT_OPTS = "--color='fg:#d4d4d4,bg:#0a0a0a,hl:#aaaaaa' --color='fg+:#ffffff,bg+:#1e1e1e,hl+:#cccccc' --color='info:#888888,prompt:#999999,pointer:#999999' --color='marker:#bbbbbb,spinner:#bbbbbb,header:#555555'";
     LD_LIBRARY_PATH = "/run/opengl-driver/lib";
   };
   environment.variables = {
