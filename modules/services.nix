@@ -1,20 +1,31 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   nbfcCfg = config.services.nbfc;
-  nbfcWrapperConfig = pkgs.writeText "nbfc.json" (builtins.toJSON {
-    SelectedConfigId = nbfcCfg.modelName;
-    EmbeddedControllerType = nbfcCfg.ecBackend;
-  });
+  nbfcWrapperConfig = pkgs.writeText "nbfc.json" (
+    builtins.toJSON {
+      SelectedConfigId = nbfcCfg.modelName;
+      EmbeddedControllerType = nbfcCfg.ecBackend;
+    }
+  );
 
   monerodCfg = config.services.monerod;
   monerodPkg = pkgs.monero-cli;
 
   p2poolCfg = config.services.p2pool;
   chainFlag =
-    if p2poolCfg.chain == "mini" then "--mini"
-    else if p2poolCfg.chain == "nano" then "--nano"
-    else "";
-in {
+    if p2poolCfg.chain == "mini" then
+      "--mini"
+    else if p2poolCfg.chain == "nano" then
+      "--nano"
+    else
+      "";
+in
+{
   options = {
     services.monerod = {
       enable = lib.mkEnableOption "Monero daemon (monerod)";
@@ -24,7 +35,7 @@ in {
       };
       extraArgs = lib.mkOption {
         type = lib.types.listOf lib.types.str;
-        default = [];
+        default = [ ];
       };
       rpcPort = lib.mkOption {
         type = lib.types.port;
@@ -42,7 +53,7 @@ in {
 
     services.nbfc = {
       enable = lib.mkEnableOption "NBFC fan control service";
-      package = lib.mkPackageOption pkgs "nbfc-linux" {};
+      package = lib.mkPackageOption pkgs "nbfc-linux" { };
       modelName = lib.mkOption {
         type = lib.types.str;
         description = "Notebook model name";
@@ -65,7 +76,11 @@ in {
         example = "48...";
       };
       chain = lib.mkOption {
-        type = lib.types.enum [ "main" "mini" "nano" ];
+        type = lib.types.enum [
+          "main"
+          "mini"
+          "nano"
+        ];
         default = "mini";
       };
       dataDir = lib.mkOption {
@@ -74,7 +89,7 @@ in {
       };
       extraArgs = lib.mkOption {
         type = lib.types.listOf lib.types.str;
-        default = [];
+        default = [ ];
       };
       monerodHost = lib.mkOption {
         type = lib.types.str;
@@ -112,7 +127,10 @@ in {
               "https://dns.cloudflare.com/dns-query"
             ];
             upstream_dns_file = "";
-            bootstrap_dns = [ "9.9.9.9" "1.1.1.1" ];
+            bootstrap_dns = [
+              "9.9.9.9"
+              "1.1.1.1"
+            ];
             fallback_dns = [ "https://dns.cloudflare.com/dns-query" ];
           };
         };
@@ -130,10 +148,12 @@ in {
 
       services.flatpak = {
         enable = true;
-        remotes = [{
-          name = "flathub";
-          location = "https://flathub.org/repo/flathub.flatpakrepo";
-        }];
+        remotes = [
+          {
+            name = "flathub";
+            location = "https://flathub.org/repo/flathub.flatpakrepo";
+          }
+        ];
         packages = [
           "com.stremio.Stremio"
           "org.vinegarhq.Sober"
@@ -141,7 +161,7 @@ in {
         ];
         overrides.global.Environment.GTK_THEME = "Dracula";
       };
-
+      services.blueman.enable = true;
       services.gvfs.enable = true;
 
       services.i2pd = {
@@ -174,7 +194,7 @@ in {
         isSystemUser = true;
         group = "monerod";
       };
-      users.groups.monerod = {};
+      users.groups.monerod = { };
       systemd.services.monerod = {
         description = "Monero Daemon";
         after = [ "network.target" ];
@@ -239,10 +259,13 @@ in {
         isSystemUser = true;
         group = "p2pool";
       };
-      users.groups.p2pool = {};
+      users.groups.p2pool = { };
       systemd.services.p2pool = {
         description = "P2Pool node (${p2poolCfg.chain} chain)";
-        after = [ "network.target" "monerod.service" ];
+        after = [
+          "network.target"
+          "monerod.service"
+        ];
         wants = [ "monerod.service" ];
         wantedBy = [ "multi-user.target" ];
         serviceConfig = {

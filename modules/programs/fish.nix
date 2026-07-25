@@ -3,6 +3,7 @@
     enable = true;
     interactiveShellInit = ''
       set -gx LIBVIRT_DEFAULT_URI qemu:///system
+      set -gx DOAS_PERSIST_TIMEOUT 0
       set -g fish_greeting
 set -gx EZA_COLORS "di=96:fi=37:ex=92:ln=95:or=91:mi=91:su=93:sf=93:wu=93:sg=93:pi=93:so=93:bd=94:cd=94"
 
@@ -86,17 +87,85 @@ set -gx EZA_COLORS "di=96:fi=37:ex=92:ln=95:or=91:mi=91:su=93:sf=93:wu=93:sg=93:
         command catgirl config $argv
       end
 
-      function endtor
-        doas pkill -9 -x tor 2>/dev/null
-        or doas kill -9 (pgrep -x tor 2>/dev/null) 2>/dev/null
-        echo "tor killed"
+      function starttor --description 'Route all traffic through Tor'
+        sudo systemctl stop tor 2>/dev/null; or true
+        sudo pkill -f "tor -f /home/yari/.torrc" 2>/dev/null; or true
+        sleep 1
+        sudo tor -f /home/yari/.torrc & disown
+        sleep 2
+        set -l tor_uid (sudo id -u tor)
+
+        # --- NAT: redirect TCP to TransPort ---
+        sudo iptables -t nat -N TOR_PROXY 2>/dev/null; or sudo iptables -t nat -F TOR_PROXY
+        sudo iptables -t nat -A TOR_PROXY -m owner --uid-owner $tor_uid -j RETURN
+        sudo iptables -t nat -A TOR_PROXY -o lo -j RETURN
+        sudo iptables -t nat -A TOR_PROXY -p tcp --dport 9040 -j RETURN
+        sudo iptables -t nat -A TOR_PROXY -p tcp --dport 9050 -j RETURN
+        sudo iptables -t nat -A TOR_PROXY -p tcp --dport 9051 -j RETURN
+        sudo iptables -t nat -A TOR_PROXY -p tcp -j REDIRECT --to-ports 9040
+        sudo iptables -t nat -A OUTPUT -j TOR_PROXY
+
+        # --- NAT: redirect DNS to DNSPort ---
+        sudo iptables -t nat -N TOR_DNS 2>/dev/null; or sudo iptables -t nat -F TOR_DNS
+        sudo iptables -t nat -A TOR_DNS -m owner --uid-owner $tor_uid -j RETURN
+        sudo iptables -t nat -A TOR_DNS -o lo -j RETURN
+        sudo iptables -t nat -A TOR_DNS -p udp --dport 5353 -j RETURN
+        sudo iptables -t nat -A TOR_DNS -p udp --dport 53 -j REDIRECT --to-ports 5353
+        sudo iptables -t nat -A OUTPUT -j TOR_DNS
+
+        # --- Filter: killswitch — only Tor traffic leaves ---
+        sudo iptables -N TOR_OUT 2>/dev/null; or sudo iptables -F TOR_OUT
+        sudo iptables -A TOR_OUT -m owner --uid-owner $tor_uid -j ACCEPT
+        sudo iptables -A TOR_OUT -o lo -j ACCEPT
+        sudo iptables -A TOR_OUT -p tcp --dport 9040 -j ACCEPT
+        sudo iptables -A TOR_OUT -p tcp --dport 9050 -j ACCEPT
+        sudo iptables -A TOR_OUT -p tcp --dport 9051 -j ACCEPT
+        sudo iptables -A TOR_OUT -p udp --dport 5353 -j ACCEPT
+        sudo iptables -A TOR_OUT -p udp --dport 123 -j ACCEPT
+        sudo iptables -A TOR_OUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+        sudo iptables -A TOR_OUT -j DROP
+        sudo iptables -A OUTPUT -j TOR_OUT
+
+        # --- IPv6: drop everything to prevent leaks ---
+        sudo ip6tables -P OUTPUT DROP 2>/dev/null
+
+        set -gx ALL_PROXY socks5://127.0.0.1:9050
+        echo "traffic is now routed through Tor (~/.torrc)"
       end
 
-      function iftor
-        if curl -sL --socks5 127.0.0.1:9050 https://check.torproject.org/ | rg -q "Congratulations"
-          echo "Connected to the internet via tor"
+      function clearnet --description 'Restore direct internet access'
+        sudo iptables -F
+        sudo iptables -t nat -F
+        sudo iptables -X
+        sudo ip6tables -P OUTPUT ACCEPT 2>/dev/null; or true
+        sudo resolvectl dnssec wlan0 no
+        sudo pkill -f "tor -f /home/yari/.torrc" 2>/dev/null; or true
+        set -e ALL_PROXY
+        echo "direct internet restored"
+      end
+
+      function flushfw --description 'Flush iptables and disable DNSSEC'
+        doas resolvectl dnssec wlan0 no
+        doas iptables -F
+        doas iptables -t nat -F
+        doas iptables -X
+        echo "connection reset"
+      end
+
+      function iftor --description 'Check if traffic is routed through Tor'
+        if doas iptables -C OUTPUT -j TOR_OUT 2>/dev/null
+          echo "traffic is routed through Tor"
         else
-          echo "Not connected to the internet via tor"
+          echo "traffic is direct"
+        end
+        doas systemctl is-active tor >/dev/null; and echo "tor daemon: active"; or echo "tor daemon: inactive"
+      end
+
+      function ifclear --description 'Check if traffic is direct (clearnet)'
+        if doas iptables -C OUTPUT -j TOR_OUT 2>/dev/null
+          echo "clearnet: no (traffic is routed through Tor)"
+        else
+          echo "clearnet: yes (traffic is direct)"
         end
       end
 
@@ -113,11 +182,6 @@ set -gx EZA_COLORS "di=96:fi=37:ex=92:ln=95:or=91:mi=91:su=93:sf=93:wu=93:sg=93:
         end
         cd "$dir"
         devenv shell
-      end
-
-      function tor --wraps tor --description 'Start tor daemon in background'
-        command tor -f ~/.torrc $argv &
-        disown
       end
 
       function record --description 'Record screen with audio using wf-recorder'

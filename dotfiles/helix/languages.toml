@@ -32,7 +32,7 @@ name = "zig"
 scope = "source.zig"
 file-types = ["zig"]
 
-[grammar]
+[[grammar]]
 name = "rust"
 source = { git = "https://github.com/tree-sitter/tree-sitter-rust", rev = "v0.21.0" }
 

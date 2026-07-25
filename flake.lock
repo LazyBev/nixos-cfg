@@ -1,5 +1,27 @@
 {
   "nodes": {
+    "aerothemeplasma-nix": {
+      "inputs": {
+        "flake-parts": "flake-parts",
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1784304434,
+        "narHash": "sha256-G+vQM/I8jpuNAh3j98zt0EMAn6aaZVoOZV5tdIOLTxQ=",
+        "owner": "nyakase",
+        "repo": "aerothemeplasma-nix",
+        "rev": "e203fcb7c8153e2c3b3d1b7bf2b849b656126c8f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nyakase",
+        "ref": "senpai",
+        "repo": "aerothemeplasma-nix",
+        "type": "github"
+      }
+    },
     "base16": {
       "inputs": {
         "fromYaml": "fromYaml"
@@ -122,6 +144,24 @@
         "nixpkgs-lib": "nixpkgs-lib"
       },
       "locked": {
+        "lastModified": 1778716662,
+        "narHash": "sha256-m1Yf0wZ8j1OHjTc2UwHwyQRSnNeSgLJOd7q5Y45hzi4=",
+        "owner": "hercules-ci",
+        "repo": "flake-parts",
+        "rev": "f7c1a2d347e4c52d5fb8d10cb4d94b5884e546fb",
+        "type": "github"
+      },
+      "original": {
+        "owner": "hercules-ci",
+        "repo": "flake-parts",
+        "type": "github"
+      }
+    },
+    "flake-parts_2": {
+      "inputs": {
+        "nixpkgs-lib": "nixpkgs-lib_2"
+      },
+      "locked": {
         "lastModified": 1782949081,
         "narHash": "sha256-vp6Y/Grm98ESt6ceOkWiHWyZRDV3J1RID4w+6NWK9yA=",
         "owner": "hercules-ci",
@@ -135,7 +175,7 @@
         "type": "github"
       }
     },
-    "flake-parts_2": {
+    "flake-parts_3": {
       "inputs": {
         "nixpkgs-lib": [
           "stylix",
@@ -265,6 +305,26 @@
         "type": "github"
       }
     },
+    "nirimod": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1784224031,
+        "narHash": "sha256-Di1AGYoTvdpbXHaXtqYB7ur5BB54ytCaBxdNhisvvdQ=",
+        "owner": "srinivasr",
+        "repo": "nirimod",
+        "rev": "622bbd9549dc8ee8cbdd8b854f372e2662458af0",
+        "type": "github"
+      },
+      "original": {
+        "owner": "srinivasr",
+        "repo": "nirimod",
+        "type": "github"
+      }
+    },
     "nix-flatpak": {
       "locked": {
         "lastModified": 1767983141,
@@ -298,6 +358,21 @@
       }
     },
     "nixpkgs-lib": {
+      "locked": {
+        "lastModified": 1777168982,
+        "narHash": "sha256-GOkGPcboWE9BmGCRMLX3worL4EMnsnG8MyKmXNeYuhQ=",
+        "owner": "nix-community",
+        "repo": "nixpkgs.lib",
+        "rev": "f5901329dade4a6ea039af1433fb087bd9c1fe14",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "nixpkgs.lib",
+        "type": "github"
+      }
+    },
+    "nixpkgs-lib_2": {
       "locked": {
         "lastModified": 1782614948,
         "narHash": "sha256-ePjCwr1sNm9NYUqywL7QfK3JnlS015msC+eBu2zKlp8=",
@@ -406,10 +481,12 @@
     },
     "root": {
       "inputs": {
+        "aerothemeplasma-nix": "aerothemeplasma-nix",
         "easy-hosts": "easy-hosts",
-        "flake-parts": "flake-parts",
+        "flake-parts": "flake-parts_2",
         "hjem": "hjem",
         "niri-nix": "niri-nix",
+        "nirimod": "nirimod",
         "nix-flatpak": "nix-flatpak",
         "nixpkgs": "nixpkgs",
         "omnisearch": "omnisearch",
@@ -424,7 +501,7 @@
         "base16-helix": "base16-helix",
         "base16-vim": "base16-vim",
         "firefox-gnome-theme": "firefox-gnome-theme",
-        "flake-parts": "flake-parts_2",
+        "flake-parts": "flake-parts_3",
         "gnome-shell": "gnome-shell",
         "nixpkgs": [
           "nixpkgs"
