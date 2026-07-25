@@ -20,8 +20,16 @@
       url = "https://git.bwaaa.monster/omnisearch/snapshot/master.tar.gz";
     };
     ribbon.url = "github:LazyBev/ribbon";
+    aerothemeplasma-nix = {
+      url = "github:nyakase/aerothemeplasma-nix/senpai";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     stylix = {
       url = "github:nix-community/stylix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    nirimod = {
+      url = "github:srinivasr/nirimod";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -63,6 +71,7 @@
                 inputs.nix-flatpak.nixosModules.nix-flatpak
                 inputs.omnisearch.nixosModules.default
                 inputs.stylix.nixosModules.stylix
+                inputs.aerothemeplasma-nix.nixosModules.aerothemeplasma-nix
                 ./modules
               ];
           };

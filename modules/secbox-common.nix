@@ -18,10 +18,51 @@ in lib.mkIf isSecbox {
     client.enable = true;
     relay.enable = false;
     settings = {
-      DNSPort = [{ addr = "127.0.0.1"; port = 5353; }];
+      # --- SOCKS with stream isolation ---
+      SOCKSPort = [{
+        addr = "127.0.0.1";
+        port = 9050;
+        flags = [
+          "IsolateDestAddr"
+          "IsolateDestPort"
+          "IsolateClientProtocol"
+          "IsolateSOCKSAuth"
+        ];
+      }];
+
+      # --- Transparent proxy ---
       TransPort = [{ addr = "127.0.0.1"; port = 9040; }];
+
+      # --- DNS via Tor ---
+      DNSPort = [{ addr = "127.0.0.1"; port = 5353; }];
+
+      # --- Control port with secure auth ---
+      ControlPort = [{ addr = "127.0.0.1"; port = 9051; }];
+      CookieAuthentication = true;
+
+      # --- .onion mapping ---
       VirtualAddrNetwork = "10.192.0.0/10";
       AutomapHostsOnResolve = true;
+
+      # --- Security hardening ---
+      StrictNodes = true;
+      SafeLogging = true;
+      SafeSocks = true;
+      DisableDebuggerAttachment = true;
+      EnforceDistinctSubnets = true;
+      GeoIPExcludeUnknown = true;
+
+      # --- Performance ---
+      HardwareAccel = true;
+      NewCircuitPeriod = 15;
+      MaxCircuitDirtiness = 300;
+      CircuitStreamTimeout = 180;
+      LearnCircuitBuildTimeout = false;
+      CircuitBuildTimeout = 30;
+      NumEntryGuards = 3;
+      NumCPUs = 0;
+      BandwidthRate = 0;
+      BandwidthBurst = 0;
     };
   };
 
@@ -29,7 +70,7 @@ in lib.mkIf isSecbox {
   services.resolved.settings = {
     Resolve.DNSSEC = "true";
     Resolve.FallbackDNS = "1.1.1.1 1.0.0.1";
-    Resolve.DNS = "127.0.0.1 5353";
+    Resolve.DNS = lib.mkForce "127.0.0.1 5353";
   };
 
   boot.kernelParams = [

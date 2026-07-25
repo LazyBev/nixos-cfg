@@ -123,7 +123,7 @@ spawn-at-startup "xwayland-satellite"
 spawn-at-startup "fcitx5" "-d"
 spawn-at-startup "dunst"
 spawn-at-startup "bash" "-lc" "sleep 1 && nm-applet --indicator"
-spawn-at-startup "swaybg" "-i" "/home/yari/.config/niri/matikanefuku.png" "-m" "fill"
+spawn-at-startup "swaybg" "-i" "/home/yari/.config/niri/larp.png" "-m" "fill"
 
 binds {
     Alt+Shift+Slash { show-hotkey-overlay; }
@@ -207,7 +207,7 @@ binds {
     Alt+Shift+N      { move-column-to-workspace-up; }
     Alt+Shift+M      { move-column-to-workspace-down; }
 
-    Alt+Ctrl+F      { spawn "fanboost"; }
+    Alt+Ctrl+F      { spawn "fantoggle"; }
     Alt+Ctrl+Shift+F { spawn "fanauto"; }
     Alt+Ctrl+Up     { spawn "fanup"; }
     Alt+Ctrl+Down   { spawn "fandown"; }

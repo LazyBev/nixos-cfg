@@ -1,12 +1,12 @@
 { config, lib, pkgs, ... }: {
   networking.networkmanager.enable = true;
+  networking.networkmanager.dns = "none";
   networking.networkmanager.wifi.powersave = false;
   networking.networkmanager.wifi.backend = "iwd";
   networking.hostName = config.vars.hostname;
-  networking.nameservers = [ "1.1.1.1" "1.0.0.1" ];
+  networking.nameservers = [ "127.0.0.1" ];
   networking.firewall.enable = true;
   networking.firewall.logRefusedConnections = false;
-  networking.firewall.allowedTCPPorts = [ 8087 ];
 
   networking.wireless.iwd.enable = true;
   networking.wireless.iwd.settings = {
@@ -41,6 +41,6 @@
   };
 
   services.resolved.enable = true;
-  services.resolved.settings.Resolve.DNSSEC = true;
+  services.resolved.settings.Resolve.DNSSEC = "true";
   services.resolved.settings.Resolve.FallbackDNS = "1.1.1.1 1.0.0.1";
 }
