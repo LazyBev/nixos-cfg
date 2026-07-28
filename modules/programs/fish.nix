@@ -876,10 +876,15 @@
         echo ""
         echo "  $_C_CYAN ip$_C_RESET"
         set -l ip_cache /tmp/.topaz_ip_cache
-        if test -f "$ip_cache" -a (math (date +%s) - (stat -c %Y "$ip_cache")) -lt 300
-          set -l data (cat "$ip_cache")
-        else
-          set -l data (curl -s --max-time 3 https://ipinfo.io/json 2>/dev/null)
+        set -l data
+        if test -f "$ip_cache"
+          set -l age (math (date +%s) - (stat -c %Y "$ip_cache") 2>/dev/null)
+          if test "$age" -lt 300 2>/dev/null
+            set data (cat "$ip_cache")
+          end
+        end
+        if test -z "$data"
+          set data (curl -s --max-time 3 https://ipinfo.io/json 2>/dev/null)
           if test -n "$data"; printf '%s\n' "$data" >"$ip_cache"; end
         end
         set -l ip (printf '%s\n' "$data" | string match -r '"ip":\s*"[^"]*"' | string replace -r '.*"ip":\s*"([^"]*).*' '$1')
@@ -896,10 +901,15 @@
         echo ""
         echo "  $_C_CYAN weather$_C_RESET"
         set -l wthr_cache /tmp/.topaz_wthr_cache
-        if test -f "$wthr_cache" -a (math (date +%s) - (stat -c %Y "$wthr_cache")) -lt 600
-          set -l w (cat "$wthr_cache")
-        else
-          set -l w (curl -s --max-time 3 "https://wttr.in?format=%C+%t+%w+%h")
+        set -l w
+        if test -f "$wthr_cache"
+          set -l age (math (date +%s) - (stat -c %Y "$wthr_cache") 2>/dev/null)
+          if test "$age" -lt 600 2>/dev/null
+            set w (cat "$wthr_cache")
+          end
+        end
+        if test -z "$w"
+          set w (curl -s --max-time 3 "https://wttr.in?format=%C+%t+%w+%h")
           if test -n "$w"; printf '%s\n' "$w" >"$wthr_cache"; end
         end
         if test -n "$w"
