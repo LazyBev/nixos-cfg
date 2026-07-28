@@ -1,6 +1,6 @@
 { config, lib, pkgs, ... }: {
   networking.networkmanager.enable = true;
-  networking.networkmanager.dns = "none";
+  networking.networkmanager.dns = lib.mkForce "none";
   networking.networkmanager.wifi.powersave = false;
   networking.networkmanager.wifi.backend = "iwd";
   networking.hostName = config.vars.hostname;

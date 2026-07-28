@@ -5,6 +5,9 @@
   inputs,
   ...
 }:
+let
+  h = import ../lib/helpers.nix { inherit lib; };
+in
 {
   imports = [
     ./hardware-configuration.nix
@@ -18,6 +21,10 @@
   programs.appimage = {
     enable = true;
     binfmt = true;
+  };
+  programs.noctalia = {
+    enable = true;
+    systemd.enable = true;
   };
   hardware.enableRedistributableFirmware = true;
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
@@ -55,6 +62,10 @@
     "kvm-intel"
     "fuse"
     "msi-ec"
+    "nft_reject"
+    "nf_reject_ipv4"
+    "nf_reject_ipv6"
+    "nft_reject_inet"
   ];
   boot.kernelParams = [
     "nvidia_drm.modeset=1"
@@ -67,6 +78,8 @@
     "randomize_kstack_offset=on"
     "pti=on"
     "debugfs=off"
+    "apparmor=1"
+    "lsm=lockdown,capability,yama,apparmor,bpf"
   ];
   boot.blacklistedKernelModules = [
     "dccp"
@@ -113,6 +126,11 @@
     };
   };
 
+  services.ergo-irc = {
+    enable = true;
+    operPasswordHash = "$2a$04$bgk5F5D6N/pDexnAXA6Bzeqf7xbBDYr5dm7dMKf4ixlZ3f8bCtvi6";
+  };
+
   services.hardware.openrgb = {
     enable = true;
     motherboard = "amd";
@@ -121,7 +139,48 @@
   environment.systemPackages = [
     pkgs.ocl-icd
     pkgs.audit
+    pkgs.obfs4
+    pkgs.nftables
   ];
+
+  # Add cargo bin to PATH for locally-built tools (topaz, etc.)
+  environment.sessionVariables.CARGO_HOME = [ "/home/yari/.cargo" ];
+  programs.fish.shellInit = ''
+    set -gx PATH "$HOME/.cargo/bin" $PATH
+  '';
+
+  # ClamAV: auto-scan downloads
+  services.clamav = {
+    updater.enable = true;
+    updater.interval = "hourly";
+    daemon.enable = true;
+    scanner = {
+      enable = true;
+      interval = "hourly";
+      scanDirectories = [ "/home/yari/Downloads" ];
+    };
+  };
+
+  # Instant scan on download: watch ~/Downloads for new files
+  systemd.paths.clamav-watch-downloads = {
+    description = "Watch ~/Downloads for new files to scan";
+    wantedBy = [ "multi-user.target" ];
+    pathConfig = {
+      PathChanged = "/home/yari/Downloads";
+      Unit = "clamav-scan-download.service";
+    };
+  };
+  systemd.services.clamav-scan-download = {
+    description = "Scan new download with ClamAV";
+    after = [ "clamav-daemon.service" ];
+    serviceConfig.Type = "oneshot";
+    script = ''
+      OUTPUT=$(${pkgs.clamav}/bin/clamdscan --infected /home/yari/Downloads/ 2>&1)
+      if echo "$OUTPUT" | grep -q "FOUND"; then
+        ${pkgs.libnotify}/bin/notify-send -u critical "Malware detected!" "$(echo "$OUTPUT" | grep FOUND)"
+      fi
+    '';
+  };
   environment.etc."xmrig/config.json".source = lib.mkForce ../dotfiles/xmrig/config-unified.json;
 
   services.nbfc = {
@@ -130,23 +189,16 @@
     modelConfig = ../dotfiles/nbfc/cyborg-15-a12udx.json;
   };
 
-  boot.kernel.sysctl = {
-    "kernel.kptr_restrict" = 2;
-    "kernel.dmesg_restrict" = 1;
-    "kernel.unprivileged_bpf_disabled" = 1;
-    "kernel.ftrace_enabled" = false;
-    "kernel.perf_event_paranoid" = 3;
+  boot.kernel.sysctl = h.securitySysctl // {
     "kernel.audit" = 1;
-    "net.core.bpf_jit_harden" = 2;
-    "net.ipv4.tcp_syncookies" = 1;
-    "net.ipv4.conf.all.rp_filter" = 1;
-    "net.ipv4.conf.default.rp_filter" = 1;
-    "net.ipv4.conf.all.log_martians" = true;
-    "net.ipv4.conf.default.log_martians" = true;
-    "net.ipv4.conf.all.accept_redirects" = 0;
-    "net.ipv6.conf.all.accept_redirects" = 0;
-    "net.ipv4.conf.all.secure_redirects" = 0;
-    "net.ipv4.conf.all.send_redirects" = 0;
+    "kernel.sysrq" = 0;
+    "net.ipv4.conf.default.accept_redirects" = 0;
+    "net.ipv6.conf.default.accept_redirects" = 0;
+    "net.ipv6.conf.all.accept_ra" = 0;
+    "net.ipv6.conf.default.accept_ra" = 0;
+    "net.ipv4.icmp_echo_ignore_broadcasts" = 1;
+    "net.ipv4.icmp_ignore_bogus_error_responses" = 1;
+    "net.ipv4.tcp_timestamps" = 0;
     "dev.tty.ldisc_autoload" = 0;
     "vm.mmap_rnd_bits" = 32;
     "vm.mmap_rnd_compat_bits" = 16;
@@ -157,19 +209,36 @@
     client.enable = true;
     relay.enable = false;
     settings = {
-      SOCKSPort = [{
-        addr = "127.0.0.1";
-        port = 9050;
-        flags = [
-          "IsolateDestAddr"
-          "IsolateDestPort"
-          "IsolateClientProtocol"
-          "IsolateSOCKSAuth"
-        ];
-      }];
-      TransPort = [{ addr = "127.0.0.1"; port = 9040; }];
-      DNSPort = [{ addr = "127.0.0.1"; port = 5353; }];
-      ControlPort = [{ addr = "127.0.0.1"; port = 9051; }];
+      SOCKSPort = lib.mkForce [
+        {
+          addr = "127.0.0.1";
+          port = 9050;
+          flags = [
+            "IsolateDestAddr"
+            "IsolateDestPort"
+            "IsolateClientProtocol"
+            "IsolateSOCKSAuth"
+          ];
+        }
+      ];
+      TransPort = [
+        {
+          addr = "127.0.0.1";
+          port = 9040;
+        }
+      ];
+      DNSPort = [
+        {
+          addr = "127.0.0.1";
+          port = 5353;
+        }
+      ];
+      ControlPort = [
+        {
+          addr = "127.0.0.1";
+          port = 9051;
+        }
+      ];
       CookieAuthentication = true;
       VirtualAddrNetwork = "10.192.0.0/10";
       AutomapHostsOnResolve = true;
@@ -192,7 +261,33 @@
     };
   };
 
-  services.fail2ban.enable = true;
+  services.fail2ban = {
+    enable = true;
+    maxretry = 3;
+    bantime = "1h";
+    bantime-increment = {
+      enable = true;
+      factor = "2";
+      maxtime = "12h";
+      overalljails = true;
+    };
+    ignoreIP = [
+      "127.0.0.1/8"
+      "::1"
+    ];
+    jails = {
+      sshd = {
+        settings = {
+          enabled = true;
+          port = "ssh";
+          filter = "sshd";
+          maxretry = 3;
+          bantime = "1h";
+          findtime = "10m";
+        };
+      };
+    };
+  };
 
   security.forcePageTableIsolation = true;
 
@@ -207,23 +302,45 @@
     description = "Proton VPN killswitch: block non-VPN traffic";
     after = [ "network.target" ];
     wantedBy = [ "multi-user.target" ];
-    path = with pkgs; [ iptables ];
-    serviceConfig.Type = "oneshot";
-    serviceConfig.RemainAfterExit = true;
+    path = with pkgs; [
+      iproute2
+      iptables
+    ];
+    serviceConfig.Type = "simple";
+    serviceConfig.Restart = "always";
+    serviceConfig.RestartSec = 3;
     script = ''
-      if ! ip link show proton0 >/dev/null 2>&1; then
-        echo "proton0 interface not found, skipping killswitch"
-        exit 0
-      fi
-
+      # Create chain
       iptables -N PROTON_KS 2>/dev/null || iptables -F PROTON_KS
+
+      # Phase 1: pre-connection — allow VPN handshake but block everything else
       iptables -A PROTON_KS -o lo -j ACCEPT
-      iptables -A PROTON_KS -o proton0 -j ACCEPT
+      iptables -A PROTON_KS -p udp --dport 53 -j ACCEPT
+      iptables -A PROTON_KS -p tcp --dport 53 -j ACCEPT
+      iptables -A PROTON_KS -p udp --dport 123 -j ACCEPT
+      iptables -A PROTON_KS -p udp --dport 443 -j ACCEPT
+      iptables -A PROTON_KS -p tcp --dport 443 -j ACCEPT
       iptables -A PROTON_KS -m state --state ESTABLISHED,RELATED -j ACCEPT
       iptables -A PROTON_KS -j DROP
-      iptables -A OUTPUT -j PROTON_KS
+      iptables -C OUTPUT -j PROTON_KS 2>/dev/null || iptables -A OUTPUT -j PROTON_KS
 
       ip6tables -P OUTPUT DROP 2>/dev/null || true
+
+      # Poll for proton0: tighten when up, loosen when down
+      while true; do
+        if ip link show proton0 >/dev/null 2>&1; then
+          # Phase 2: VPN connected — ONLY allow traffic through proton0
+          iptables -C PROTON_KS -o proton0 -j ACCEPT 2>/dev/null || iptables -I PROTON_KS 7 -o proton0 -j ACCEPT
+          iptables -D PROTON_KS -p udp --dport 443 -j ACCEPT 2>/dev/null || true
+          iptables -D PROTON_KS -p tcp --dport 443 -j ACCEPT 2>/dev/null || true
+        else
+          # Phase 1: VPN disconnected — re-allow handshake
+          iptables -D PROTON_KS -o proton0 -j ACCEPT 2>/dev/null || true
+          iptables -C PROTON_KS -p udp --dport 443 -j ACCEPT 2>/dev/null || iptables -I PROTON_KS 6 -p udp --dport 443 -j ACCEPT
+          iptables -C PROTON_KS -p tcp --dport 443 -j ACCEPT 2>/dev/null || iptables -I PROTON_KS 7 -p tcp --dport 443 -j ACCEPT
+        fi
+        sleep 5
+      done
     '';
     preStop = ''
       iptables -D OUTPUT -j PROTON_KS 2>/dev/null || true
@@ -232,4 +349,31 @@
       ip6tables -P OUTPUT ACCEPT 2>/dev/null || true
     '';
   };
+
+  # tor-hardening: don't auto-start on gentuwu (Proton VPN is default).
+  # Use `starttor` fish function to activate manually when needed.
+  systemd.services.tor-hardening.wantedBy = lib.mkForce [ ];
+
+  # Cloudflare WARP: MASQUE/QUIC protocol (looks like HTTPS to DPI).
+  # Use `warp-on`/`warp-off` fish functions to toggle.
+  # Do NOT run alongside ProtonVPN — use one or the other.
+  # Pre-resolve API endpoint to avoid DNS timeout at daemon startup
+  # (hickory-resolver used by the daemon sometimes fails under systemd-resolved).
+  networking.extraHosts = ''
+    104.16.192.82 api.cloudflareclient.com
+    104.16.24.84 api.cloudflareclient.com
+    # Anycast include/exclude IPs from WARP policy
+    162.159.197.4
+    2606:4700:102::4
+    162.159.197.3
+    2606:4700:102::3
+  '';
+  services.cloudflare-warp = {
+    enable = true;
+    openFirewall = true;
+  };
+
+  systemd.tmpfiles.rules = [
+    "L+ /usr/sbin/nft - - - - ${pkgs.nftables}/bin/nft"
+  ];
 }

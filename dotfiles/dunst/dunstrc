@@ -17,11 +17,11 @@ padding = 12
 horizontal_padding = 16
 text_icon_padding = 10
 frame_width = 1
-frame_color = "#666666"
-separator_color = "#2a2a2a"
+frame_color = "#585b70"
+separator_color = "#313244"
 sort = yes
 idle_threshold = 0
-font = Pragmasevka Nerd Font 11
+font = Monocraft 11
 line_height = 1
 markup = full
 format = "<b>%a</b>\n%s  <i>%b</i>"
@@ -50,25 +50,24 @@ mouse_left_click = close_current
 mouse_middle_click = do_action
 mouse_right_click = close_all
 [experimental]
-per_monitor_display = false
 
 [urgency_low]
-background = "#0a0a0a"
-foreground = "#999999"
+background = "#1e1e2e"
+foreground = "#a6adc8"
 timeout = 8
-frame_color = "#666666"
+frame_color = "#45475a"
 
 [urgency_normal]
-background = "#0a0a0a"
-foreground = "#e0e0e0"
+background = "#1e1e2e"
+foreground = "#cdd6f4"
 timeout = 10
-frame_color = "#888888"
+frame_color = "#585b70"
 
 [urgency_critical]
-background = "#0a0a0a"
-foreground = "#ffffff"
+background = "#1e1e2e"
+foreground = "#f38ba8"
 timeout = 0
-frame_color = "#ffffff"
+frame_color = "#f38ba8"
 
 [vesktop]
 appname = "Vesktop"
@@ -76,10 +75,9 @@ format = "<b>%s</b>\n<i>%b</i>"
 icon_position = left
 min_icon_size = 40
 max_icon_size = 40
-icon_corner_radius = 20
-frame_color = "#bbbbbb"
-background = "#0a0a0a"
-foreground = "#e0e0e0"
+frame_color = "#cba6f7"
+background = "#1e1e2e"
+foreground = "#cdd6f4"
 timeout = 5
 
 [vesktop-lower]
@@ -88,10 +86,9 @@ format = "<b>%s</b>\n<i>%b</i>"
 icon_position = left
 min_icon_size = 40
 max_icon_size = 40
-icon_corner_radius = 20
-frame_color = "#bbbbbb"
-background = "#0a0a0a"
-foreground = "#e0e0e0"
+frame_color = "#cba6f7"
+background = "#1e1e2e"
+foreground = "#cdd6f4"
 timeout = 5
 
 [firefox-normal]
@@ -100,8 +97,7 @@ format = "<b>%s</b>\n<i>%b</i>"
 icon_position = left
 min_icon_size = 40
 max_icon_size = 40
-icon_corner_radius = 8
-frame_color = "#999999"
-background = "#0a0a0a"
-foreground = "#e0e0e0"
+frame_color = "#89b4fa"
+background = "#1e1e2e"
+foreground = "#cdd6f4"
 timeout = 5

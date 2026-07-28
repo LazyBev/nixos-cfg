@@ -1,11 +1,9 @@
 { lib, ... }: {
   imports = [
     ./niri.nix
-    ./portal.nix
     ./sddm.nix
-    ./opengl.nix
+    ./hardware.nix
     ./pipewire.nix
-    ./power.nix
     ./stylix.nix
     ./home.nix
     ./services.nix
@@ -29,7 +27,6 @@
     ./system/vars.nix
     ./system/virtualisation.nix
 
-    ./users/pentest.nix
     ./users/yari.nix
   ];
 

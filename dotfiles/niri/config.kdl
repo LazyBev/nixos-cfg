@@ -31,15 +31,15 @@ layout {
 
     focus-ring {
         width 0
-        active-color "#cccccc"
-        inactive-color "#1e1e1e"
+        active-color "#cba6f7"
+        inactive-color "#313244"
     }
 
     border {
         on
         width 2
-        active-color "#cccccc"
-        inactive-color "#1e1e1e"
+        active-color "#cba6f7"
+        inactive-color "#45475a"
     }
 
     preset-column-widths {
@@ -124,6 +124,7 @@ spawn-at-startup "fcitx5" "-d"
 spawn-at-startup "dunst"
 spawn-at-startup "bash" "-lc" "sleep 1 && nm-applet --indicator"
 spawn-at-startup "swaybg" "-i" "/home/yari/.config/niri/larp.png" "-m" "fill"
+spawn-at-startup "noctalia"
 
 binds {
     Alt+Shift+Slash { show-hotkey-overlay; }
@@ -147,8 +148,8 @@ binds {
     Mod+Shift+L      { spawn "hyprlock"; }
     Mod+Shift+P      { spawn "shutdown" "now"; }
     Mod+Ctrl+P       { spawn "reboot"; }
-    Alt+U            { spawn "systemctl" "--user" "restart" "ribbon"; }
-    Alt+Shift+U      { spawn "systemctl" "--user" "stop" "ribbon"; }
+    Alt+U            { spawn-sh "noctalia msg settings-toggle"; }
+    Alt+Shift+U      { spawn-sh "noctalia msg bar-toggle"; }
     Alt+Shift+Backspace { quit; }
 
     Alt+X            { screenshot; }
@@ -212,14 +213,30 @@ binds {
     Alt+Ctrl+Up     { spawn "fanup"; }
     Alt+Ctrl+Down   { spawn "fandown"; }
 
-    XF86AudioRaiseVolume { spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "0.1+"; }
-    XF86AudioLowerVolume { spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "0.1-"; }
-    XF86AudioMute        { spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SINK@" "toggle"; }
+    XF86AudioRaiseVolume { spawn-sh "noctalia msg volume-up"; }
+    XF86AudioLowerVolume { spawn-sh "noctalia msg volume-down"; }
+    XF86AudioMute        { spawn-sh "noctalia msg volume-mute"; }
     XF86AudioMicMute     { spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SOURCE@" "toggle"; }
     XF86AudioPlay        { spawn "playerctl" "play-pause"; }
     XF86AudioNext        { spawn "playerctl" "next"; }
     XF86AudioPrev        { spawn "playerctl" "previous"; }
 
-    XF86MonBrightnessUp   { spawn "brightnessctl" "set" "10%+"; }
-    XF86MonBrightnessDown { spawn "brightnessctl" "set" "10%-"; }
+    XF86MonBrightnessUp   { spawn-sh "noctalia msg brightness-up"; }
+    XF86MonBrightnessDown { spawn-sh "noctalia msg brightness-down"; }
+}
+
+window-rule {
+    geometry-corner-radius 20
+    clip-to-geometry true
+}
+
+window-rule {
+    match app-id="dev.noctalia.Noctalia"
+    open-floating true
+    default-column-width { fixed 1080; }
+    default-window-height { fixed 920; }
+}
+
+debug {
+    honor-xdg-activation-with-invalid-serial
 }
