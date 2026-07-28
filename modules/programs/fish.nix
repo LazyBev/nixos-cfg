@@ -194,9 +194,9 @@
             _topaz_guide
           case '*'
             switch $argv[1]
-              case status;      _topaz_status
-              case audit;       _topaz_audit
-              case traffic-blend traffic_blend; _topaz_blend
+              case status;      _topaz_status $argv[2..]
+              case audit;       _topaz_audit $argv[2..]
+              case traffic-blend traffic_blend; _topaz_blend $argv[2..]
               case tor;         _topaz_tor $argv[2..]
               case vpn;         _topaz_vpn $argv[2..]
               case warp;        _topaz_warp $argv[2..]
@@ -209,20 +209,20 @@
               case mac-randomizer mac-randomiser mac; _topaz_mac $argv[2..]
               case clamav scan; _topaz_clamav $argv[2..]
               case url-check urlcheck url; _topaz_urlcheck $argv[2..]
-              case sysinfo;     _topaz_sysinfo
-              case battery;     _topaz_battery
+              case sysinfo;     _topaz_sysinfo $argv[2..]
+              case battery;     _topaz_battery $argv[2..]
               case weather;     _topaz_weather $argv[2..]
-              case disk;        _topaz_disk
+              case disk;        _topaz_disk $argv[2..]
               case processes procs; _topaz_procs $argv[2..]
               case cache;       _topaz_cache $argv[2..]
               case ports;       _topaz_ports $argv[2..]
               case scanports;   _topaz_scanports $argv[2..]
-              case ssh-audit ssh_audit; _topaz_ssh_audit
-              case mounts;      _topaz_mounts
-              case tailscale;   _topaz_tailscale
+              case ssh-audit ssh_audit; _topaz_ssh_audit $argv[2..]
+              case mounts;      _topaz_mounts $argv[2..]
+              case tailscale;   _topaz_tailscale $argv[2..]
               case what;        _topaz_what $argv[2..]
               case recent;      _topaz_recent $argv[2..]
-              case relink;      _topaz_relink
+              case relink;      _topaz_relink $argv[2..]
               case record-status record_on record_off record_on rec_on rec_off
                 _topaz_record $argv[1]
               case guide help -h --help; _topaz_guide
@@ -246,6 +246,7 @@
         end
         _check_doas; or return 1
         switch $argv[1]
+          case -h --help; echo "usage: topaz tor <on|off|status>"; return 0
           case on
             if test -f /etc/tor/torrc-obfs4
               doas pkill -x tor 2>/dev/null
@@ -280,6 +281,7 @@
           return 1
         end
         switch $argv[1]
+          case -h --help; echo "usage: topaz vpn <on|off|status|openvpn>"; return 0
           case on
             if command -v protonvpn-app >/dev/null 2>&1
               protonvpn-app &
@@ -317,6 +319,7 @@
         end
         _check_tool warp-cli; or return 1
         switch $argv[1]
+          case -h --help; echo "usage: topaz warp <on|off|status>"; return 0
           case on
             warp-cli connect 2>&1
             and echo "$_C_GREEN v$_C_RESET WARP connected"
@@ -334,6 +337,7 @@
           return 1
         end
         switch $argv[1]
+          case -h --help; echo "usage: topaz dns <on|off|leak|status>"; return 0
           case on
             doas resolvectl dnssec wlan0 yes
             echo "$_C_GREEN v$_C_RESET DNSSEC enabled"
@@ -358,6 +362,7 @@
       function _topaz_fw --description 'Firewall & killswitch'
         _check_doas; or return 1
         switch $argv[1]
+          case -h --help; echo "usage: topaz firewall <on|off|status>"; return 0
           case on
             doas iptables -P OUTPUT DROP
             doas iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
@@ -389,6 +394,7 @@
       end
 
       function _topaz_block --description 'Block a port'
+        if test "$argv[1]" = -h -o "$argv[1]" = --help 2>/dev/null; echo "usage: topaz block <port> [tcp|udp|both]"; return 0; end
         _check_doas; or return 1
         if test (count $argv) -lt 1
           echo "$_C_RED x$_C_RESET usage: topaz block <port> [tcp|udp|both]"
@@ -410,6 +416,7 @@
       end
 
       function _topaz_unblock --description 'Unblock a port'
+        if test "$argv[1]" = -h -o "$argv[1]" = --help 2>/dev/null; echo "usage: topaz unblock <port> [tcp|udp|both]"; return 0; end
         _check_doas; or return 1
         if test (count $argv) -lt 1
           echo "$_C_RED x$_C_RESET usage: topaz unblock <port> [tcp|udp|both]"
@@ -437,6 +444,7 @@
         end
         _check_tool wpctl "PipeWire (wireplumber)"; or return 1
         switch $argv[1]
+          case -h --help; echo "usage: topaz mic <on|off|status>"; return 0
           case off
             wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 1
             echo "$_C_GREEN v$_C_RESET microphone muted"
@@ -459,6 +467,7 @@
         end
         _check_doas; or return 1
         switch $argv[1]
+          case -h --help; echo "usage: topaz cam <on|off|status>"; return 0
           case off
             for dev in /dev/video*
               doas chmod 000 $dev 2>/dev/null
@@ -494,6 +503,7 @@
         end
         _check_tool nmcli "networkmanager"; or return 1
         switch $argv[1]
+          case -h --help; echo "usage: topaz mac <on|off|status>"; return 0
           case on
             nmcli connection modify wlan0 802-11-wireless.cloned-mac-address random
             nmcli device reapply wlan0 2>/dev/null
@@ -514,6 +524,7 @@
       end
 
       function _topaz_clamav --description 'Scan files with ClamAV'
+        if test "$argv[1]" = -h -o "$argv[1]" = --help 2>/dev/null; echo "usage: topaz clamav [paths...]"; return 0; end
         set -l targets ~/Downloads
         if test (count $argv) -ge 1
           set targets $argv
@@ -528,6 +539,7 @@
       end
 
       function _topaz_urlcheck --description 'Check URL against threat feeds'
+        if test "$argv[1]" = -h -o "$argv[1]" = --help 2>/dev/null; echo "usage: topaz url-check <url>"; return 0; end
         if test (count $argv) -eq 0
           echo "$_C_RED x$_C_RESET usage: topaz url-check <url>"
           return 1
@@ -538,6 +550,7 @@
       end
 
       function _topaz_sysinfo --description 'System info'
+        if test "$argv[1]" = -h -o "$argv[1]" = --help 2>/dev/null; echo "usage: topaz sysinfo"; return 0; end
         set -l cores (nproc)
         set -l mem (free -h | string match -r '^Mem:\s+(\S+)' | head -1 | string replace -r 'Mem:\s+' "")
         set -l load (uptime | string match -r 'load average:.*$' | string replace 'load average: ' "")
@@ -553,6 +566,7 @@
       end
 
       function _topaz_battery --description 'Battery status'
+        if test "$argv[1]" = -h -o "$argv[1]" = --help 2>/dev/null; echo "usage: topaz battery"; return 0; end
         if test -d /sys/class/power_supply/BAT0
           set -l cap (cat /sys/class/power_supply/BAT0/capacity 2>/dev/null)
           set -l status (cat /sys/class/power_supply/BAT0/status 2>/dev/null)
@@ -567,6 +581,7 @@
       end
 
       function _topaz_weather --description 'Weather report'
+        if test "$argv[1]" = -h -o "$argv[1]" = --help 2>/dev/null; echo "usage: topaz weather [city] [-f]"; return 0; end
         set -l city ""
         set -l units metric
         if test (count $argv) -ge 1
@@ -587,6 +602,7 @@
       end
 
       function _topaz_disk --description 'Disk usage'
+        if test "$argv[1]" = -h -o "$argv[1]" = --help 2>/dev/null; echo "usage: topaz disk"; return 0; end
         echo "  $_C_MAGENTA filesystems$_C_RESET"
         df -h | string match -r '^/' | while read -l line
           echo "  $line"
@@ -598,6 +614,7 @@
       end
 
       function _topaz_procs --description 'Process monitor'
+        if test "$argv[1]" = -h -o "$argv[1]" = --help 2>/dev/null; echo "usage: topaz procs [N] [-t]"; return 0; end
         set -l count 15
         set -l tree 0
         for arg in $argv
@@ -616,6 +633,7 @@
       end
 
       function _topaz_cache --description 'Clear caches'
+        if test "$argv[1]" = -h -o "$argv[1]" = --help 2>/dev/null; echo "usage: topaz cache [-f] [-n]"; return 0; end
         set -l full 0
         set -l dry 0
         for arg in $argv
@@ -643,6 +661,7 @@
       end
 
       function _topaz_ports --description 'Show open ports'
+        if test "$argv[1]" = -h -o "$argv[1]" = --help 2>/dev/null; echo "usage: topaz ports [port] [-p proto]"; return 0; end
         set -l filter ""
         set -l proto ""
         for arg in $argv
@@ -666,6 +685,7 @@
       end
 
       function _topaz_scanports --description 'TCP/UDP port scanner'
+        if test "$argv[1]" = -h -o "$argv[1]" = --help 2>/dev/null; echo "usage: topaz scanports <target> [-t N] [-r R] [-u]"; return 0; end
         set -l target "127.0.0.1"
         set -l threads 4
         set -l range ""
@@ -705,6 +725,7 @@
       end
 
       function _topaz_ssh_audit --description 'SSH config audit'
+        if test "$argv[1]" = -h -o "$argv[1]" = --help 2>/dev/null; echo "usage: topaz ssh-audit"; return 0; end
         if test -f /etc/ssh/sshd_config
           echo "  $_C_MAGENTA SSH config audit$_C_RESET"
           for line in PermitRootLogin PasswordAuthentication PubkeyAuthentication ChallengeResponseAuthentication Port Protocol
@@ -726,6 +747,7 @@
       end
 
       function _topaz_mounts --description 'Show mounted filesystems'
+        if test "$argv[1]" = -h -o "$argv[1]" = --help 2>/dev/null; echo "usage: topaz mounts"; return 0; end
         mount | string match -r '^/' | while read -l line
           set -l parts (string split ' ' $line)
           echo "  $parts[1]  ->  $parts[3]"
@@ -733,6 +755,7 @@
       end
 
       function _topaz_tailscale --description 'Tailscale status'
+        if test "$argv[1]" = -h -o "$argv[1]" = --help 2>/dev/null; echo "usage: topaz tailscale"; return 0; end
         if command -qv tailscale
           tailscale status 2>&1 | head -20
         else
@@ -741,6 +764,7 @@
       end
 
       function _topaz_what --description 'Identify a command or file'
+        if test "$argv[1]" = -h -o "$argv[1]" = --help 2>/dev/null; echo "usage: topaz what <command>"; return 0; end
         if test (count $argv) -eq 0
           echo "$_C_RED x$_C_RESET usage: topaz what <command>"
           return 1
@@ -763,6 +787,7 @@
           set count $argv[2]
         end
         switch $mode
+          case -h --help; echo "usage: topaz recent [files|cmds] [N]"; return 0
           case cmds
             history | head -n $count
           case files '*'
@@ -772,6 +797,7 @@
       end
 
       function _topaz_relink --description 'Fix broken nix store symlinks after GC'
+        if test "$argv[1]" = -h -o "$argv[1]" = --help 2>/dev/null; echo "usage: topaz relink"; return 0; end
         echo "$_C_CYAN o$_C_RESET scanning for broken symlinks..."
         find /run/current-system/sw/bin /nix/var/nix/profiles -type l ! -exec test -e {} \; -print 2>/dev/null | head -20
         echo "$_C_DIM (run 'nix store optimise' + reboot to fully fix)$_C_RESET"
@@ -779,6 +805,7 @@
 
       function _topaz_record --description 'Recording shortcuts'
         switch $argv[1]
+          case -h --help; echo "usage: topaz record <status|on|off>"; return 0
           case record-status rec_status; rec-status
           case record-on rec_on; rec-on
           case record-off rec_off; rec-off
@@ -786,6 +813,7 @@
       end
 
       function _topaz_guide --description 'List all TOPAZ commands'
+        if test "$argv[1]" = -h -o "$argv[1]" = --help 2>/dev/null; echo "usage: topaz guide"; return 0; end
         _box "TOPAZ commands"
         echo ""
         echo "$_C_CYAN ==== NETWORK ====$_C_RESET"
@@ -841,6 +869,7 @@
       # ─── STATUS ────────────────────────────────────────────
 
       function _topaz_status --description 'Privacy & security dashboard'
+        if test "$argv[1]" = -h -o "$argv[1]" = --help 2>/dev/null; echo "usage: topaz status"; return 0; end
         _box "privacy status"
         echo ""
         echo "  $_C_CYAN tor$_C_RESET"
@@ -950,6 +979,7 @@
       # ─── AUDIT ─────────────────────────────────────────────
 
       function _topaz_audit --description 'Security audit'
+        if test "$argv[1]" = -h -o "$argv[1]" = --help 2>/dev/null; echo "usage: topaz audit"; return 0; end
         _box "security audit"
         echo ""
         set -l issues 0
@@ -1126,6 +1156,7 @@
       # ─── TRAFFIC BLEND ─────────────────────────────────────
 
       function _topaz_blend --description 'Traffic blend analysis'
+        if test "$argv[1]" = -h -o "$argv[1]" = --help 2>/dev/null; echo "usage: topaz traffic-blend"; return 0; end
         _box "traffic blend analysis"
         echo ""
 
