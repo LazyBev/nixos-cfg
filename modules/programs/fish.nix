@@ -240,6 +240,11 @@
       end
 
       function _topaz_tor --description 'Tor routing'
+        if test (count $argv) -lt 1
+          echo "$_C_RED x$_C_RESET usage: topaz tor <on|off|status>"
+          return 1
+        end
+        _check_doas; or return 1
         switch $argv[1]
           case on
             if test -f /etc/tor/torrc-obfs4
@@ -270,6 +275,10 @@
       end
 
       function _topaz_vpn --description 'ProtonVPN management'
+        if test (count $argv) -lt 1
+          echo "$_C_RED x$_C_RESET usage: topaz vpn <on|off|status|openvpn>"
+          return 1
+        end
         switch $argv[1]
           case on
             if command -v protonvpn-app >/dev/null 2>&1
@@ -320,6 +329,10 @@
       end
 
       function _topaz_dns --description 'DNS settings & leak test'
+        if test (count $argv) -lt 1
+          echo "$_C_RED x$_C_RESET usage: topaz dns <on|off|leak|status>"
+          return 1
+        end
         switch $argv[1]
           case on
             doas resolvectl dnssec wlan0 yes
@@ -418,6 +431,11 @@
       end
 
       function _topaz_mic --description 'Microphone privacy'
+        if test (count $argv) -lt 1
+          echo "$_C_RED x$_C_RESET usage: topaz mic <on|off|status>"
+          return 1
+        end
+        _check_tool wpctl "PipeWire (wireplumber)"; or return 1
         switch $argv[1]
           case off
             wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 1
@@ -435,6 +453,11 @@
       end
 
       function _topaz_cam --description 'Webcam privacy'
+        if test (count $argv) -lt 1
+          echo "$_C_RED x$_C_RESET usage: topaz cam <on|off|status>"
+          return 1
+        end
+        _check_doas; or return 1
         switch $argv[1]
           case off
             for dev in /dev/video*
@@ -465,6 +488,11 @@
       end
 
       function _topaz_mac --description 'MAC address randomization'
+        if test (count $argv) -lt 1
+          echo "$_C_RED x$_C_RESET usage: topaz mac <on|off|status>"
+          return 1
+        end
+        _check_tool nmcli "networkmanager"; or return 1
         switch $argv[1]
           case on
             nmcli connection modify wlan0 802-11-wireless.cloned-mac-address random
@@ -858,7 +886,7 @@
 
         echo ""
         echo "  $_C_CYAN mac$_C_RESET"
-        for iface in (ls /sys/class/net)
+        for iface in (command ls /sys/class/net)
           if test "$iface" != lo -a "$iface" != docker0
             set -l m (cat /sys/class/net/$iface/address 2>/dev/null)
             set -l c (cat /sys/class/net/$iface/carrier 2>/dev/null)
