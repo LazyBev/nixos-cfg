@@ -1,0 +1,67 @@
+[theme]
+mode = "dark"
+source = "builtin"
+builtin = "Catppuccin"
+
+[shell]
+font_family = "Monocraft"
+scale = 1.0
+
+[bar.main]
+position = "top"
+enabled = true
+thickness = 30
+background_opacity = 0.92
+radius = 0
+margin_edge = 0
+margin_ends = 0
+padding = 12
+widget_spacing = 8
+border_width = 0
+shadow = false
+reserve_space = true
+layer = "top"
+
+[bar.main.dead_zone.actions]
+left = "panel-toggle launcher"
+middle = "exec alacritty"
+right = "panel-toggle control-center"
+scroll_up = "volume-up"
+scroll_down = "volume-down"
+
+start = ["launcher", "workspaces"]
+center = ["clock"]
+end = ["media", "tray", "network", "volume", "battery", "control-center", "session"]
+
+[widget.clock]
+enabled = true
+
+[widget.workspaces]
+enabled = true
+
+[widget.network]
+enabled = true
+
+[widget.volume]
+enabled = true
+
+[widget.battery]
+enabled = true
+
+[widget.media]
+enabled = true
+
+[widget.tray]
+enabled = true
+
+[widget.session]
+enabled = true
+
+[widget.control_center]
+enabled = true
+
+[notifications]
+enabled = false
+
+[launcher]
+enabled = true

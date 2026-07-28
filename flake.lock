@@ -196,24 +196,6 @@
         "type": "github"
       }
     },
-    "flake-utils": {
-      "inputs": {
-        "systems": "systems"
-      },
-      "locked": {
-        "lastModified": 1731533236,
-        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
-        "owner": "numtide",
-        "repo": "flake-utils",
-        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
-        "type": "github"
-      },
-      "original": {
-        "owner": "numtide",
-        "repo": "flake-utils",
-        "type": "github"
-      }
-    },
     "fromYaml": {
       "flake": false,
       "locked": {
@@ -403,19 +385,23 @@
         "type": "github"
       }
     },
-    "nixpkgs_3": {
+    "noctalia": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
       "locked": {
-        "lastModified": 1781577229,
-        "narHash": "sha256-lrp67w8AulE9Ks53n27I45ADSzbOCn4H+CNW1Ck8B+8=",
-        "owner": "nixos",
-        "repo": "nixpkgs",
-        "rev": "567a49d1913ce81ac6e9582e3553dd90a955875f",
+        "lastModified": 1785092607,
+        "narHash": "sha256-V4rjLIreYIcdDi/YxlMGmapQ6poC7qyhdrArt5LkdRs=",
+        "owner": "noctalia-dev",
+        "repo": "noctalia",
+        "rev": "c14400cb243dac1bf1721417d09da74056034ae9",
         "type": "github"
       },
       "original": {
-        "owner": "nixos",
-        "ref": "nixos-unstable",
-        "repo": "nixpkgs",
+        "owner": "noctalia-dev",
+        "repo": "noctalia",
         "type": "github"
       }
     },
@@ -460,25 +446,6 @@
         "url": "https://git.bwaaa.monster/omnisearch/snapshot/master.tar.gz"
       }
     },
-    "ribbon": {
-      "inputs": {
-        "flake-utils": "flake-utils",
-        "nixpkgs": "nixpkgs_3"
-      },
-      "locked": {
-        "lastModified": 1783041030,
-        "narHash": "sha256-PPwKr6Y1pwHxBS+qyrLhG7XXIIQhpG+YOg4NFtY9ZNc=",
-        "owner": "LazyBev",
-        "repo": "ribbon",
-        "rev": "1c6c10f14ee7e0d796e1e74cb3f49102e0498749",
-        "type": "github"
-      },
-      "original": {
-        "owner": "LazyBev",
-        "repo": "ribbon",
-        "type": "github"
-      }
-    },
     "root": {
       "inputs": {
         "aerothemeplasma-nix": "aerothemeplasma-nix",
@@ -489,8 +456,8 @@
         "nirimod": "nirimod",
         "nix-flatpak": "nix-flatpak",
         "nixpkgs": "nixpkgs",
+        "noctalia": "noctalia",
         "omnisearch": "omnisearch",
-        "ribbon": "ribbon",
         "stylix": "stylix"
       }
     },
@@ -507,7 +474,7 @@
           "nixpkgs"
         ],
         "nur": "nur",
-        "systems": "systems_2",
+        "systems": "systems",
         "tinted-kitty": "tinted-kitty",
         "tinted-schemes": "tinted-schemes",
         "tinted-tmux": "tinted-tmux",
@@ -528,21 +495,6 @@
       }
     },
     "systems": {
-      "locked": {
-        "lastModified": 1681028828,
-        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
-        "owner": "nix-systems",
-        "repo": "default",
-        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nix-systems",
-        "repo": "default",
-        "type": "github"
-      }
-    },
-    "systems_2": {
       "locked": {
         "lastModified": 1681028828,
         "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",

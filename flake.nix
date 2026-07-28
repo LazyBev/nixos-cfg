@@ -19,7 +19,10 @@
     omnisearch = {
       url = "https://git.bwaaa.monster/omnisearch/snapshot/master.tar.gz";
     };
-    ribbon.url = "github:LazyBev/ribbon";
+    noctalia = {
+      url = "github:noctalia-dev/noctalia";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     aerothemeplasma-nix = {
       url = "github:nyakase/aerothemeplasma-nix/senpai";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -54,6 +57,7 @@
             inherit (inputs)
               omnisearch
               stylix
+              noctalia
               ;
           };
         };
@@ -72,36 +76,9 @@
                 inputs.omnisearch.nixosModules.default
                 inputs.stylix.nixosModules.stylix
                 inputs.aerothemeplasma-nix.nixosModules.aerothemeplasma-nix
+                inputs.noctalia.nixosModules.default
                 ./modules
               ];
-          };
-
-          worker-vic = {
-            arch = "x86_64";
-            class = "nixos";
-            deployable = true;
-            modules = [ ./hosts/worker-vic.nix ];
-          };
-
-          worker-opti = {
-            arch = "x86_64";
-            class = "nixos";
-            deployable = true;
-            modules = [ ./hosts/worker-opti.nix ];
-          };
-
-          secbox = {
-            arch = "x86_64";
-            class = "nixos";
-            deployable = true;
-            modules = [ ./hosts/secbox.nix ];
-          };
-
-          secbox-laptop = {
-            arch = "x86_64";
-            class = "nixos";
-            deployable = true;
-            modules = [ ./hosts/secbox-laptop.nix ];
           };
         };
       };

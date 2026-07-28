@@ -100,26 +100,6 @@ let
   };
 in
 {
-  # ribbon
-  systemd.user.services.ribbon = {
-    enable = true;
-    description = "ribbon — Wayland status bar";
-    after = [
-      "graphical-session.target"
-      "pipewire.service"
-    ];
-    wants = [ "pipewire.service" ];
-    wantedBy = [ "graphical-session.target" ];
-    partOf = [ "graphical-session.target" ];
-    serviceConfig = {
-      ExecStart = "${pkgs.ribbon}/bin/ribbon";
-      Restart = "on-failure";
-      RestartSec = "2";
-      Environment = "PATH=/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/run/wrappers/bin";
-      PassEnvironment = "HOME";
-    };
-  };
-
   # theme (qt, dconf)
   qt.enable = true;
   programs.dconf = {
@@ -133,7 +113,7 @@ in
             icon-theme = vars.iconTheme;
             cursor-theme = vars.cursorTheme;
             cursor-size = mkInt32 vars.cursorSize;
-            font-name = "Pragmasevka Nerd Font 10";
+            font-name = "Monocraft 10";
           };
         };
       }
@@ -148,9 +128,9 @@ in
     nix-init
     nurl
     nh
-    adwaita-qt
-    dracula-theme
-    dracula-icon-theme
+    (pkgs.catppuccin-gtk.override { variant = "mocha"; accents = [ "mauve" ]; })
+    (pkgs.catppuccin-kvantum.override { variant = "mocha"; accent = "mauve"; })
+    papirus-icon-theme
     grayjay
     wl-clipboard
     helix
@@ -244,7 +224,6 @@ in
       hypridle
       hyprlock
       networkmanagerapplet
-      ribbon
       nemo
       motrix
       qbittorrent
@@ -316,12 +295,12 @@ in
       ".config/niri/config.kdl".source = ../dotfiles/niri/config.kdl;
       ".config/niri/larp.png".source = ../dotfiles/niri/larp.png;
       ".config/niri/matikanefuku.png".source = ../media/Pictures/matikanefuku.png;
-      ".config/ribbon/config.rib".source = ../dotfiles/ribbon/config.rib;
+      ".config/noctalia/config.toml".source = ../dotfiles/noctalia/config.toml;
       ".config/hypr/hyprlock.conf".source = ../dotfiles/hypr/hyprlock.conf;
       ".config/hypr/hypridle.conf".source = ../dotfiles/hypr/hypridle.conf;
       ".config/alacritty/alacritty.toml".source = ../dotfiles/alacritty/alacritty.toml;
       ".config/zellij/config.kdl".source = ../dotfiles/zellij/config.kdl;
-      ".config/bat/config".text = "--theme=ansi";
+      ".config/bat/config".text = "--theme=\"Catppuccin Mocha\"";
       ".config/librewolf/librewolf/rlubfwj2.default/chrome/userChrome.css".source =
         ../dotfiles/librewolf/userChrome.css;
       ".config/librewolf/sidebery-sidebar.css".source = ../dotfiles/librewolf/sidebery-sidebar.css;
@@ -411,59 +390,7 @@ in
       ".config/helix/languages.toml".source = ../dotfiles/helix/languages.toml;
       ".config/asm-lsp/.asm-lsp.toml".text =
         "[default_config]\nassembler = \"fasm\"\ninstruction_set = \"x86/x86-64\"\n[default_config.opts]\ndiagnostics = true\ndefault_diagnostics = true\n";
-      ".config/fish/completions/topaz.fish".text = ''
-        complete -c topaz -n "not __fish_seen_subcommand_from -s --scan -I --scan-interface -p --scan-ports -c --crack -B --bench" -f -a "-s" -d "Scan for WiFi networks"
-        complete -c topaz -n "not __fish_seen_subcommand_from -s --scan -I --scan-interface -p --scan-ports -c --crack -B --bench" -f -a "--scan" -d "Scan for WiFi networks"
-        complete -c topaz -n "not __fish_seen_subcommand_from -s --scan -I --scan-interface -p --scan-ports -c --crack -B --bench" -f -a "-I" -d "List wireless interfaces"
-        complete -c topaz -n "not __fish_seen_subcommand_from -s --scan -I --scan-interface -p --scan-ports -c --crack -B --bench" -f -a "--scan-interface" -d "List wireless interfaces"
-        complete -c topaz -n "not __fish_seen_subcommand_from -s --scan -I --scan-interface -p --scan-ports -c --crack -B --bench" -f -a "-p" -d "Port scan a host"
-        complete -c topaz -n "not __fish_seen_subcommand_from -s --scan -I --scan-interface -p --scan-ports -c --crack -B --bench" -f -a "--scan-ports" -d "Port scan a host"
-        complete -c topaz -n "not __fish_seen_subcommand_from -s --scan -I --scan-interface -p --scan-ports -c --crack -B --bench" -f -a "-c" -d "Crack WPA password"
-        complete -c topaz -n "not __fish_seen_subcommand_from -s --scan -I --scan-interface -p --scan-ports -c --crack -B --bench" -f -a "--crack" -d "Crack WPA password"
-        complete -c topaz -n "not __fish_seen_subcommand_from -s --scan -I --scan-interface -p --scan-ports -c --crack -B --bench" -f -a "-B" -d "Benchmark brute-force"
-        complete -c topaz -n "not __fish_seen_subcommand_from -s --scan -I --scan-interface -p --scan-ports -c --crack -B --bench" -f -a "--bench" -d "Benchmark brute-force"
-        complete -c topaz -l verbose -s v -d "Show detailed progress"
-        complete -c topaz -l help -s h -d "Show help"
-        complete -c topaz -n "__fish_seen_subcommand_from -s --scan" -l max-channels -s n -r -d "Max channels to scan"
-        complete -c topaz -n "__fish_seen_subcommand_from -s --scan" -l fresh -s f -d "Force fresh scan"
-        complete -c topaz -n "__fish_seen_subcommand_from -c --crack" -l wordlist -s w -r -d "Wordlist file"
-        complete -c topaz -n "__fish_seen_subcommand_from -c --crack" -l brute-force -s b -d "Brute-force"
-        complete -c topaz -n "__fish_seen_subcommand_from -c --crack" -l length -s L -r -d "Max password length"
-        complete -c topaz -n "__fish_seen_subcommand_from -c --crack" -l mask -s m -r -d "Mask pattern"
-        complete -c topaz -n "__fish_seen_subcommand_from -c --crack" -l deauth -s d -d "Send deauth"
-        complete -c topaz -n "__fish_seen_subcommand_from -c --crack" -l reconnect -s R -d "Create monitor VIF"
-        complete -c topaz -n "__fish_seen_subcommand_from -c --crack" -l nmcli -s N -d "Auto-connect via nmcli"
-        complete -c topaz -n "__fish_seen_subcommand_from -c --crack" -l single-threaded -s 1 -d "Single thread"
-        complete -c topaz -n "__fish_seen_subcommand_from -c --crack" -l no-hashcat -s X -d "Skip hashcat"
-        complete -c topaz -n "__fish_seen_subcommand_from -c --crack" -l channel -s C -r -d "Channel"
-        complete -c topaz -n "__fish_seen_subcommand_from -c --crack" -l display-password-hash -s D -x -a "K M G S" -d "Force rate unit"
-        complete -c topaz -n "__fish_seen_subcommand_from -p --scan-ports" -l threads -s t -r -d "Thread count"
-        complete -c topaz -n "__fish_seen_subcommand_from -p --scan-ports" -l range -s r -r -d "Port range"
-        complete -c topaz -n "__fish_seen_subcommand_from -p --scan-ports" -l udp -s u -d "UDP scan"
-        complete -c topaz -n "__fish_seen_subcommand_from -B --bench" -l length -s L -r -d "Max password length"
-        complete -c topaz -n "__fish_seen_subcommand_from -B --bench" -l output -s o -r -d "Log passwords to file"
-        complete -c topaz -n "__fish_seen_subcommand_from -B --bench" -l threads -s t -r -d "Thread count"
-        complete -c topaz -n "__fish_seen_subcommand_from -B --bench" -l single-threaded -s 1 -d "Single thread"
-        complete -c topaz -n "__fish_seen_subcommand_from -B --bench" -l set-password -s P -r -d "Test password"
-        complete -c topaz -n "__fish_seen_subcommand_from -B --bench" -l no-hashcat -s X -d "Skip hashcat"
-        complete -c topaz -n "__fish_seen_subcommand_from -B --bench" -l display-password-hash -s D -x -a "K M G S" -d "Force rate unit"
-      '';
-      ".local/share/bash-completion/completions/topaz".text = ''
-        _topaz() {
-            local cur prev words cword; _init_completion || return
-            if [[ $cword -eq 1 ]]; then
-                COMPREPLY=($(compgen -W "-s --scan -I --scan-interface -p --scan-ports -c --crack -B --bench -v --verbose -h --help" -- "$cur"))
-                return
-            fi
-            case "''${words[1]}" in
-                -s|--scan) COMPREPLY=($(compgen -W "-n --max-channels -f --fresh" -- "$cur")) ;;
-                -c|--crack) COMPREPLY=($(compgen -W "-w --wordlist -b --brute-force -L --length -m --mask -d --deauth -R --reconnect -N --nmcli -1 --single-threaded -X --no-hashcat -C --channel -D --display-password-hash" -- "$cur")) ;;
-                -p|--scan-ports) COMPREPLY=($(compgen -W "-t --threads -r --range -u --udp" -- "$cur")) ;;
-                -B|--bench) COMPREPLY=($(compgen -W "-L --length -o --output -t --threads -1 --single-threaded -P --set-password -X --no-hashcat -D --display-password-hash" -- "$cur")) ;;
-            esac
-        }
-        complete -F _topaz topaz
-      '';
+
     };
   };
 }

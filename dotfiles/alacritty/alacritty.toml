@@ -3,34 +3,34 @@ opacity = 0.90
 
 [font]
 size = 15
-normal.family = "Pragmasevka Nerd Font"
-bold.family = "Pragmasevka Nerd Font"
-italic.family = "Pragmasevka Nerd Font"
-bold_italic.family = "Pragmasevka Nerd Font"
+normal.family = "Monocraft"
+bold.family = "Monocraft"
+italic.family = "Monocraft"
+bold_italic.family = "Monocraft"
 
 [colors.primary]
-background = "#0a0a0a"
-foreground = "#e0e0e0"
+background = "#1e1e2e"
+foreground = "#cdd6f4"
 
 [colors.normal]
-black = "#1c1c1c"
-red = "#999999"
-green = "#aaaaaa"
-yellow = "#bbbbbb"
-blue = "#bbbbbb"
-magenta = "#888888"
-cyan = "#aaaaaa"
-white = "#cccccc"
+black = "#45475a"
+red = "#f38ba8"
+green = "#a6e3a1"
+yellow = "#f9e2af"
+blue = "#89b4fa"
+magenta = "#f5c2e7"
+cyan = "#94e2d5"
+white = "#bac2de"
 
 [colors.bright]
-black = "#2a2a2a"
-red = "#aaaaaa"
-green = "#bbbbbb"
-yellow = "#cccccc"
-blue = "#cccccc"
-magenta = "#999999"
-cyan = "#bbbbbb"
-white = "#f0f0f0"
+black = "#585b70"
+red = "#f38ba8"
+green = "#a6e3a1"
+yellow = "#f9e2af"
+blue = "#89b4fa"
+magenta = "#f5c2e7"
+cyan = "#94e2d5"
+white = "#a6adc8"
 
 [scrolling]
 history = 10000
