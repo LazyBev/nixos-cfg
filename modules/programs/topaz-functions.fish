@@ -1,8 +1,51 @@
 # TOPAZ - Security & Privacy Tools
-# This file is `source`d from fish.nix (interactiveShellInit)
-# Color vars and helpers (_box, _check_tool, _check_doas) are in fish.nix
+# Auto-loaded from vendor_functions.d; also sourced by fish.nix interactiveShellInit
+
+      set -g _C_RED (printf '\e[38;2;255;80;80m')
+      set -g _C_GREEN (printf '\e[38;2;120;220;120m')
+      set -g _C_YELLOW (printf '\e[38;2;255;220;100m')
+      set -g _C_BLUE (printf '\e[38;2;100;160;255m')
+      set -g _C_MAGENTA (printf '\e[38;2;220;130;255m')
+      set -g _C_CYAN (printf '\e[38;2;100;220;230m')
+      set -g _C_WHITE (printf '\e[38;2;230;230;230m')
+      set -g _C_BOLD (printf '\e[1m')
+      set -g _C_DIM (printf '\e[2;38;2;130;130;130m')
+      set -g _C_ITALIC (printf '\e[3m')
+      set -g _C_RESET (printf '\e[0m')
+
+      function _box --description 'Print a centered box header'
+        set -l text $argv[1]
+        set -l color (test (count $argv) -gt 1 && echo $argv[2] || echo "$_C_MAGENTA")
+        set -l w 34
+        set -l tl (string length -- "$text")
+        if test $tl -gt 30; set w (math $tl + 4); end
+        set -l pl (math -s0 "($w - $tl) / 2")
+        set -l pr (math "$w - $tl - $pl")
+        echo "$color ╔$(string repeat -n $w '═')╗$_C_RESET"
+        echo "$color ║$_C_RESET$(string repeat -n $pl ' ')$_C_BOLD$text$_C_RESET$(string repeat -n $pr ' ')""$color""║$_C_RESET"
+        echo "$color ╚$(string repeat -n $w '═')╝$_C_RESET"
+      end
 
       set -g TOPAZ_VERSION '2.1.0'
+
+      function _check_tool --description 'Check if a required tool is available'
+        if not command -qv $argv[1] >/dev/null 2>&1
+          echo "$_C_RED x$_C_RESET $_C_BOLD$argv[1]$_C_RESET not found"
+          if test (count $argv) -ge 2
+            echo "  $_C_DIM install: $argv[2]$_C_RESET"
+          end
+          return 1
+        end
+        return 0
+      end
+
+      function _check_doas --description 'Check doas availability'
+        if not command -qv doas >/dev/null 2>&1
+          echo "$_C_RED x$_C_RESET $_C_BOLD doas$_C_RESET not found (needs root privileges)"
+          return 1
+        end
+        return 0
+      end
 
       function topaz --description 'TOPAZ Suite - security & privacy tools'
         switch (count $argv)

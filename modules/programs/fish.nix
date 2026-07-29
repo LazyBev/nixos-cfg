@@ -1,4 +1,10 @@
-{ pkgs, config, ... }: {
+{ pkgs, config, ... }:
+let
+  topazVendor = pkgs.runCommand "topaz-vendor-functions" {} ''
+    mkdir -p $out/share/fish/vendor_functions.d
+    cp ${./topaz-functions.fish} $out/share/fish/vendor_functions.d/topaz.fish
+  '';
+in {
   programs.fish = {
     enable = true;
     interactiveShellInit = ''
@@ -343,4 +349,5 @@
       flake = "nix flake";
     };
   };
+  environment.systemPackages = [ topazVendor ];
 }
