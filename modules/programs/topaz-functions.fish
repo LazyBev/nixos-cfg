@@ -635,7 +635,7 @@
       function _topaz_leaktest --description 'DNS & IP leak test'
         if test "$argv[1]" = -h -o "$argv[1]" = --help 2>/dev/null; echo "usage: topaz leaktest"; return 0; end
         echo "$_C_CYAN o$_C_RESET DNS test..."
-        set -l resolvers (resolvectl dns 2>/dev/null | string replace -r '^.*:\s*(\S+)' '$1' | string match -r '\S+' | string join ' ')
+        set -l resolvers (resolvectl dns 2>/dev/null | string replace -r '^.*:\s+(\S+)' '$1' | string match -r '\S+' | string join ' ')
         if test -n "$resolvers"
           echo "  DNS servers: $resolvers"
           if string match -qr '127\.|192\.168\.|10\.|172\.1[6-9]\.|172\.2[0-9]\.|172\.3[0-1]\.|0\.0\.0\.0' -- $resolvers
@@ -997,7 +997,7 @@
           echo "    $_C_YELLOW ?$_C_RESET dnssec: OFF"
           set warnings (math $warnings + 1)
         end
-        set -l resolvers (resolvectl dns 2>/dev/null | string replace -r '^.*:\s*(\S+)' '$1' | string match -r '\S+' | string join ' ')
+        set -l resolvers (resolvectl dns 2>/dev/null | string replace -r '^.*:\s+(\S+)' '$1' | string match -r '\S+' | string join ' ')
         if test -n "$resolvers"
           if string match -qr '127\.|192\.168\.|10\.|172\.1[6-9]\.|172\.2[0-9]\.|172\.3[0-1]\.|0\.0\.0\.0' -- $resolvers
             echo "    $_C_GREEN v$_C_RESET dns: local resolver ($resolvers)"
