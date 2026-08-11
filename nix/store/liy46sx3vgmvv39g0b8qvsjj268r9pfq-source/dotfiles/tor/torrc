@@ -1,0 +1,40 @@
+# Security
+User tor
+DataDirectory /var/lib/tor
+SafeLogging 1
+SafeSocks 1
+DisableDebuggerAttachment 1
+StrictNodes 1
+EnforceDistinctSubnets 1
+
+# SOCKS with stream isolation per destination/client
+SOCKSPort 127.0.0.1:9050 IsolateDestAddr IsolateDestPort IsolateClientProtocol IsolateSOCKSAuth
+
+# DNS via Tor
+DNSPort 127.0.0.1:5353
+VirtualAddrNetwork 10.192.0.0/10
+AutomapHostsOnResolve 1
+
+# Transparent proxy
+TransPort 127.0.0.1:9040
+
+# Control port with cookie auth
+ControlPort 127.0.0.1:9051
+CookieAuthentication 1
+
+# Speed
+HardwareAccel 1
+NumEntryGuards 3
+NewCircuitPeriod 15
+MaxCircuitDirtiness 300
+CircuitStreamTimeout 180
+LearnCircuitBuildTimeout 0
+CircuitBuildTimeout 30
+NumCPUs 0
+
+# Bandwidth (0 = unlimited)
+BandwidthRate 0
+BandwidthBurst 0
+
+# GeoIP
+GeoIPExcludeUnknown 1

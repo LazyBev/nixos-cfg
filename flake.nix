@@ -17,14 +17,10 @@
       url = "github:gmodena/nix-flatpak/?ref=latest";
     };
     omnisearch = {
-      url = "https://git.bwaaa.monster/omnisearch/snapshot/master.tar.gz";
+      url = "git+https://git.bwaaa.monster/omnisearch?rev=9c68a8ae6fb32f8a1660da392b9985a4ab3e7cb4";
     };
     noctalia = {
       url = "github:noctalia-dev/noctalia";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    aerothemeplasma-nix = {
-      url = "github:nyakase/aerothemeplasma-nix/senpai";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     stylix = {
@@ -37,50 +33,67 @@
     };
   };
 
-  outputs = inputs @ { flake-parts, nixpkgs, ... }:
-    flake-parts.lib.mkFlake { inherit inputs; } {
-      imports = [ inputs.easy-hosts.flakeModule ];
+  outputs =
+    inputs@{ flake-parts, nixpkgs, ... }:
+    flake-parts.lib.mkFlake { inherit inputs; } (
+      { config, lib, ... }:
+      let
+        isNix = f: lib.hasSuffix ".nix" f;
+        hostModules = builtins.filter isNix (nixpkgs.lib.filesystem.listFilesRecursive ./gentuwu);
+        homeModules = builtins.filter isNix (nixpkgs.lib.filesystem.listFilesRecursive ./yari);
+      in
+      {
+        imports = [
+          inputs.easy-hosts.flakeModule
+        ];
 
-      systems = [ "x86_64-linux" ];
+        config = {
+          systems = [ "x86_64-linux" ];
 
-      perSystem = { pkgs, ... }: {
-        formatter = pkgs.nixfmt;
-      };
+          perSystem = { pkgs, ... }: {
+            formatter = pkgs.nixfmt;
+          };
 
-      easy-hosts = {
-        useGlobalPkgs = false;
+          easy-hosts = {
+            useGlobalPkgs = false;
 
-        shared = {
-          modules = [];
-          specialArgs = {
-            inherit inputs;
-            inherit (inputs)
-              omnisearch
-              stylix
-              noctalia
-              ;
+            shared = {
+              modules = [ ];
+              specialArgs = {
+                inherit inputs;
+                inherit (inputs)
+                  omnisearch
+                  stylix
+                  noctalia
+                  ;
+              };
+            };
+
+            hosts = {
+              gentuwu = {
+                arch = "x86_64";
+                class = "nixos";
+                deployable = true;
+                modules = [
+                  {
+                    _module.args = {
+                      inherit inputs;
+                      inherit (inputs) omnisearch;
+                    };
+                  }
+                  inputs.niri-nix.nixosModules.default
+                  inputs.hjem.nixosModules.default
+                  inputs.nix-flatpak.nixosModules.nix-flatpak
+                  inputs.omnisearch.nixosModules.default
+                  inputs.stylix.nixosModules.stylix
+                  inputs.noctalia.nixosModules.default
+                ]
+                ++ hostModules
+                ++ homeModules;
+              };
+            };
           };
         };
-
-        hosts = {
-            gentuwu = {
-              arch = "x86_64";
-              class = "nixos";
-              deployable = true;
-              modules = [
-                ./hosts/gentuwu.nix
-                { _module.args = { inherit inputs; inherit (inputs) omnisearch; }; }
-                inputs.niri-nix.nixosModules.default
-                inputs.hjem.nixosModules.default
-                inputs.nix-flatpak.nixosModules.nix-flatpak
-                inputs.omnisearch.nixosModules.default
-                inputs.stylix.nixosModules.stylix
-                inputs.aerothemeplasma-nix.nixosModules.aerothemeplasma-nix
-                inputs.noctalia.nixosModules.default
-                ./modules
-              ];
-          };
-        };
-      };
-    };
+      }
+    );
 }

@@ -1,0 +1,26 @@
+# core dumps (not core.h etc)
+core.[0-9]*
+**/core.[0-9]*
+
+# devenv generated directories
+devenvs/
+
+# build artifacts
+**/_build/
+**/.devenv/
+
+# nix build results
+result
+result-*
+
+# macos
+.DS_Store
+
+# editor
+*.swp
+*.swo
+*.o
+
+# large media
+media/Videos/
+media/Videos/wallpaper.mp4
