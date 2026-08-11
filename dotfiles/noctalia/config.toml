@@ -65,3 +65,22 @@ enabled = false
 
 [launcher]
 enabled = true
+
+[idle]
+pre_action_fade_seconds = 0
+
+[idle.behavior.lock]
+timeout = 600
+command = "noctalia:session lock"
+enabled = true
+
+[idle.behavior.screen-off]
+timeout = 630
+command = "noctalia:dpms-off"
+resume_command = "noctalia:dpms-on"
+enabled = true
+
+[idle.behavior.lock-and-suspend]
+timeout = 660
+command = "noctalia:session lock-and-suspend"
+enabled = true
