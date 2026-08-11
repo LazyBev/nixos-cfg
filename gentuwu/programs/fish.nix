@@ -77,7 +77,7 @@
         nix flake update 2>&1 | while read -l line; echo "  $line"; end; or begin; popd; return 1; end
         echo ""
         echo "$_C_MAGENTA ── nh os switch ──$_C_RESET"
-        secretspec run --file "$HOME/$argv[1]/secretspec.toml" --profile default -- nh os switch --impure ".#$argv[2]"
+        nh os switch ".#$argv[2]"
         set -l rc $status
         popd
         if test $rc -eq 0
@@ -93,7 +93,7 @@
           return 1
         end
         echo "$_C_CYAN ○$_C_RESET rebuilding..."
-        secretspec run --file "$HOME/$argv[1]/secretspec.toml" --profile default -- nh os switch --impure $HOME/$argv[1]#$argv[2]
+        nh os switch $HOME/$argv[1]#$argv[2]
         and begin
           echo "$_C_GREEN ✓$_C_RESET $_C_BOLD system updated!$_C_RESET"
         end

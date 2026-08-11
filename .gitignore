@@ -1,3 +1,6 @@
+# local secrets (sourced by fish update/sysupd before --impure rebuild)
+secrets/
+
 # core dumps (not core.h etc)
 core.[0-9]*
 **/core.[0-9]*

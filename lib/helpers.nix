@@ -5,47 +5,62 @@
 let
   # ── Option shorthand ──────────────────────────────────
 
-  mkStrOpt = default: description: lib.mkOption {
-    type = lib.types.str;
-    inherit default description;
-  };
+  mkStrOpt =
+    default: description:
+    lib.mkOption {
+      type = lib.types.str;
+      inherit default description;
+    };
 
-  mkBoolOpt = default: description: lib.mkOption {
-    type = lib.types.bool;
-    inherit default description;
-  };
+  mkBoolOpt =
+    default: description:
+    lib.mkOption {
+      type = lib.types.bool;
+      inherit default description;
+    };
 
-  mkIntOpt = default: description: lib.mkOption {
-    type = lib.types.int;
-    inherit default description;
-  };
+  mkIntOpt =
+    default: description:
+    lib.mkOption {
+      type = lib.types.int;
+      inherit default description;
+    };
 
-  mkPathOpt = default: description: lib.mkOption {
-    type = lib.types.path;
-    inherit default description;
-  };
+  mkPathOpt =
+    default: description:
+    lib.mkOption {
+      type = lib.types.path;
+      inherit default description;
+    };
 
-  mkPortOpt = default: description: lib.mkOption {
-    type = lib.types.port;
-    inherit default description;
-  };
+  mkPortOpt =
+    default: description:
+    lib.mkOption {
+      type = lib.types.port;
+      inherit default description;
+    };
 
-  mkEnumOpt = values: default: description: lib.mkOption {
-    type = lib.types.nullOr (lib.types.enum values);
-    inherit default description;
-  };
+  mkEnumOpt =
+    values: default: description:
+    lib.mkOption {
+      type = lib.types.nullOr (lib.types.enum values);
+      inherit default description;
+    };
 
-  mkListOpt = elemType: default: description: lib.mkOption {
-    type = lib.types.listOf elemType;
-    inherit default description;
-  };
+  mkListOpt =
+    elemType: default: description:
+    lib.mkOption {
+      type = lib.types.listOf elemType;
+      inherit default description;
+    };
 
   # ── Host conditionals ─────────────────────────────────
 
   isHostIn = config: hosts: builtins.elem config.vars.hostname hosts;
   isGentuwu = config: config.vars.hostname == "gentuwu";
 
-  onHosts = config: hosts: body:
+  onHosts =
+    config: hosts: body:
     lib.mkIf (isHostIn config hosts) body;
 
   # ── Systemd service security hardening ────────────────
@@ -87,12 +102,21 @@ let
     proto = protocol;
   };
 
-in {
+in
+{
   inherit
-    mkStrOpt mkBoolOpt mkIntOpt mkPathOpt mkPortOpt
-    mkEnumOpt mkListOpt
-    isHostIn isGentuwu
+    mkStrOpt
+    mkBoolOpt
+    mkIntOpt
+    mkPathOpt
+    mkPortOpt
+    mkEnumOpt
+    mkListOpt
+    isHostIn
+    isGentuwu
     onHosts
-    hardenService securitySysctl
-    mkFirewallRule;
+    hardenService
+    securitySysctl
+    mkFirewallRule
+    ;
 }

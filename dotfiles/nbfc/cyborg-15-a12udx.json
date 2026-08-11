@@ -2,7 +2,7 @@
   "NotebookModel": "Cyborg 15 A12UDX",
   "EcPollInterval": 500,
   "ReadWriteWords": false,
-  "CriticalTemperature": 85,
+  "CriticalTemperature": 100,
   "FanConfigurations": [
     {
       "FanDisplayName": "CPU Fan",
@@ -12,29 +12,19 @@
       "MaxSpeedValue": 128,
       "TemperatureThresholds": [
         {
-          "UpThreshold": 65,
-          "DownThreshold": 60,
-          "FanSpeed": 100.0
+          "UpThreshold": 95,
+          "DownThreshold": 90,
+          "FanSpeed": 0.0
         },
         {
-          "UpThreshold": 55,
-          "DownThreshold": 50,
-          "FanSpeed": 75.0
-        },
-        {
-          "UpThreshold": 45,
-          "DownThreshold": 40,
+          "UpThreshold": 97,
+          "DownThreshold": 95,
           "FanSpeed": 50.0
         },
         {
-          "UpThreshold": 40,
-          "DownThreshold": 35,
-          "FanSpeed": 25.0
-        },
-        {
-          "UpThreshold": 30,
-          "DownThreshold": 25,
-          "FanSpeed": 10.0
+          "UpThreshold": 99,
+          "DownThreshold": 97,
+          "FanSpeed": 100.0
         }
       ]
     },
@@ -46,29 +36,19 @@
       "MaxSpeedValue": 128,
       "TemperatureThresholds": [
         {
-          "UpThreshold": 65,
-          "DownThreshold": 60,
-          "FanSpeed": 100.0
+          "UpThreshold": 95,
+          "DownThreshold": 90,
+          "FanSpeed": 0.0
         },
         {
-          "UpThreshold": 55,
-          "DownThreshold": 50,
-          "FanSpeed": 75.0
-        },
-        {
-          "UpThreshold": 45,
-          "DownThreshold": 40,
+          "UpThreshold": 97,
+          "DownThreshold": 95,
           "FanSpeed": 50.0
         },
         {
-          "UpThreshold": 40,
-          "DownThreshold": 35,
-          "FanSpeed": 25.0
-        },
-        {
-          "UpThreshold": 30,
-          "DownThreshold": 25,
-          "FanSpeed": 10.0
+          "UpThreshold": 99,
+          "DownThreshold": 97,
+          "FanSpeed": 100.0
         }
       ]
     },
@@ -80,14 +60,14 @@
       "MaxSpeedValue": 1,
       "TemperatureThresholds": [
         {
-          "UpThreshold": 85,
-          "DownThreshold": 80,
-          "FanSpeed": 100.0
+          "UpThreshold": 90,
+          "DownThreshold": 85,
+          "FanSpeed": 0.0
         },
         {
-          "UpThreshold": 80,
-          "DownThreshold": 80,
-          "FanSpeed": 0.0
+          "UpThreshold": 95,
+          "DownThreshold": 90,
+          "FanSpeed": 100.0
         }
       ],
       "FanSpeedPercentageOverrides": [

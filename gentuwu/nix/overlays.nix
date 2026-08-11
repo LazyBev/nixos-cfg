@@ -41,9 +41,6 @@ _: {
       final: prev:
       let
         patched-catppuccin = prev.python313.pkgs.catppuccin.overrideAttrs (old: {
-          patches = (old.patches or [ ]) ++ [
-            ../../patches/catppuccin-mpl-core.patch
-          ];
           doCheck = false;
           pytestCheckPhase = "true";
           pythonImportsCheckPhase = "true";
@@ -108,33 +105,6 @@ _: {
             "libjvm.so"
           ];
         });
-      }
-    )
-    (
-      final: prev:
-      let
-        secretspec-src = prev.fetchurl {
-          url = "https://github.com/cachix/secretspec/releases/download/v0.18.0/secretspec-x86_64-unknown-linux-gnu.tar.xz";
-          hash = "sha256-n1w1We/MasSxKl8MHFSD7+lOCDUtzQxEG0GttmPCUuo=";
-        };
-      in
-      {
-        secretspec = prev.stdenv.mkDerivation {
-          pname = "secretspec";
-          version = "0.18.0";
-          src = secretspec-src;
-          sourceRoot = ".";
-          nativeBuildInputs = [ prev.autoPatchelfHook ];
-          buildInputs = [ prev.stdenv.cc.cc.lib ];
-          installPhase = ''
-            mkdir -p $out/bin
-            install -m755 secretspec-x86_64-unknown-linux-gnu/secretspec $out/bin/secretspec
-          '';
-          meta = {
-            description = "Declarative interface for every secret provider (prebuilt release)";
-            license = prev.lib.licenses.asl20;
-          };
-        };
       }
     )
   ];

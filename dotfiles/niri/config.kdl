@@ -114,7 +114,7 @@ environment {
     CLUTTER_BACKEND "wayland"
     _JAVA_AWT_WM_NONREPARENTING "1"
     XDG_DESKTOP_PORTAL "xdg-desktop-portal"
-    XCURSOR_THEME "Bibata-Modern-Classic"
+    XCURSOR_THEME "Bibata-Modern-Ice"
     XCURSOR_SIZE "24"
     WLR_NO_HARDWARE_CURSORS "1"
 }
@@ -125,6 +125,7 @@ spawn-at-startup "dunst"
 spawn-at-startup "bash" "-lc" "sleep 1 && nm-applet --indicator"
 spawn-at-startup "swaybg" "-i" "/home/yari/.config/niri/larp.png" "-m" "fill"
 spawn-at-startup "noctalia"
+spawn-at-startup "keyclack"
 
 binds {
     Alt+Shift+Slash { show-hotkey-overlay; }

@@ -8,9 +8,9 @@
       "networkmanager"
       "video"
       "audio"
+      "input"
     ];
     shell = pkgs.fish;
-    hashedPassword = builtins.getEnv "USER_PASSWORD_HASH";
   };
   users.defaultUserShell = pkgs.fish;
 }
