@@ -146,7 +146,7 @@ binds {
     Alt+Z            { spawn "alacritty" "-e" "impala-nm"; }
     Alt+Ctrl+M       { spawn "alacritty" "-e" "rmpc"; }
 
-    Mod+Shift+L      { spawn "hyprlock"; }
+    Mod+Shift+L      { spawn "noctalia:session lock"; }
     Mod+Shift+P      { spawn "shutdown" "now"; }
     Mod+Ctrl+P       { spawn "reboot"; }
     Alt+U            { spawn-sh "noctalia msg settings-toggle"; }
@@ -209,7 +209,7 @@ binds {
     Alt+Shift+N      { move-column-to-workspace-up; }
     Alt+Shift+M      { move-column-to-workspace-down; }
 
-    Alt+Ctrl+F      { spawn "fantoggle"; }
+    Alt+Ctrl+F      { spawn "fanboost"; }
     Alt+Ctrl+Shift+F { spawn "fanauto"; }
     Alt+Ctrl+Up     { spawn "fanup"; }
     Alt+Ctrl+Down   { spawn "fandown"; }

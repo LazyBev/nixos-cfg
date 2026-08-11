@@ -145,8 +145,6 @@ in
     alacritty
     bemenu
     dunst
-    hypridle
-    hyprlock
     networkmanagerapplet
     nemo
     motrix

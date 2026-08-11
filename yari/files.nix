@@ -13,8 +13,6 @@ in
     ".local/share/keyclack".source = ../media/keyclack;
     ".config/niri/matikanefuku.png".source = ../media/Pictures/matikanefuku.png;
     ".config/noctalia/config.toml".source = ../dotfiles/noctalia/config.toml;
-    ".config/hypr/hyprlock.conf".source = ../dotfiles/hypr/hyprlock.conf;
-    ".config/hypr/hypridle.conf".source = ../dotfiles/hypr/hypridle.conf;
     ".config/alacritty/alacritty.toml".source = ../dotfiles/alacritty/alacritty.toml;
     ".config/zellij/config.kdl".source = ../dotfiles/zellij/config.kdl;
     ".config/bat/config".text = "--theme=\"Catppuccin Mocha\"";
