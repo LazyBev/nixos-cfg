@@ -7,6 +7,7 @@ let
   vars = config.vars;
 in
 {
+  hjem.clobberByDefault = true;
   hjem.users.yari.files = {
     ".config/niri/config.kdl".source = ../dotfiles/niri/config.kdl;
     ".config/niri/larp.png".source = ../dotfiles/niri/larp.png;

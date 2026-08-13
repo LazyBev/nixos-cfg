@@ -2,7 +2,7 @@
   stylix = {
     enable = true;
     autoEnable = true;
-    image = /home/yari/Pictures/matikanefuku.png;
+    image = ../../media/Pictures/matikanefuku.png;
     imageScalingMode = "fill";
     base16Scheme = {
       base00 = "1e1e2e";
@@ -59,6 +59,7 @@
       terminal = 0.95;
     };
     targets.grub.enable = false;
+    targets.limine.enable = false;
     targets.plymouth.enable = false;
     targets.qt.enable = false;
   };
