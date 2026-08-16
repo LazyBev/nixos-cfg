@@ -106,7 +106,13 @@ in
     ".config/fcitx5/conf/spell.conf".source = ../dotfiles/fcitx5/conf/spell.conf;
     ".config/catgirl/config".source = ../dotfiles/catgirl/config;
     ".config/mpv/mpv.conf".text = ''
-      osc=no keepaspect=yes vo=gpu-next gpu-context=wayland hwdec=vaapi profile=gpu-hq
+      osc=no
+      keepaspect=yes
+      vo=gpu-next
+      gpu-context=wayland
+      hwdec=vaapi
+      profile=gpu-hq
+      watch-later-options-remove=sub-pos
     '';
     ".config/mpv/scripts/modernz.lua".source =
       "${pkgs.mpvScripts.modernz}/share/mpv/scripts/modernz.lua";
