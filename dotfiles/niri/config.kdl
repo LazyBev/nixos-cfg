@@ -157,6 +157,8 @@ binds {
     Alt+Shift+X      { screenshot-screen; }
     Alt+Ctrl+X       { screenshot-window; }
 
+    Mod+P            { spawn-sh "hyprpicker -a"; }
+
     Ctrl+Alt+Q       { close-window; }
 
     Alt+H            { focus-column-left; }

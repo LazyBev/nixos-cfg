@@ -254,6 +254,7 @@ in
     impala-nm
     fetch
     keyclack
+    hyprpicker
     opentabletdriver
     ncurses5
     xwayland-satellite
@@ -263,5 +264,7 @@ in
       export GDK_BACKEND=x11
       exec ${pkgs.artix-games-launcher}/bin/artix-games-launcher "$@"
     '')
+    obsidian
+    hyfetch
   ];
 }
