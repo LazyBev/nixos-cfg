@@ -173,7 +173,7 @@ binds {
 
     Alt+Tab          { toggle-window-floating; }
     Alt+Ctrl+Tab     { focus-floating; }
-    Alt+Space        { focus-tiling; }
+    Ctrl+Alt+Space   { focus-tiling; }
     Alt+F            { fullscreen-window; }
     Alt+W            { switch-preset-column-width; }
 
