@@ -38,8 +38,6 @@ in
     ".config/librewolf/librewolf/nhjvl52u.i2p/user.js".source = ../dotfiles/librewolf/i2p-user.js;
     ".config/qutebrowser/config.py".source = ../dotfiles/qutebrowser/config.py;
     ".config/qutebrowser/styles/youtube.css".source = ../dotfiles/qutebrowser/styles/youtube.css;
-    ".config/dunst/dunstrc".source = ../dotfiles/dunst/dunstrc;
-    ".config/dunst/icons".source = ../dotfiles/dunst/icons;
     ".config/gtk-3.0/settings.ini".text = ''
       [Settings]
       gtk-theme-name=${vars.gtkTheme}
@@ -57,9 +55,15 @@ in
       gtk-application-prefer-dark-theme=1
     '';
     ".config/Kvantum/kvantum.kvconfig".text = "[General]\ntheme=${vars.gtkTheme}\n";
+    ".config/Kvantum/${vars.gtkTheme}/${vars.gtkTheme}.kvconfig".source =
+      ../dotfiles/Kvantum/Oxocarbon/Oxocarbon.kvconfig;
     ".config/qt6ct/qt6ct.conf".source = ../dotfiles/qt6ct/qt6ct.conf;
-    ".config/qt6ct/colors/Catppuccin-Mocha.conf".source =
-      ../dotfiles/qt6ct/colors/Catppuccin-Mocha.conf;
+    ".config/qt6ct/colors/Oxocarbon.conf".source = ../dotfiles/qt6ct/colors/Oxocarbon.conf;
+    ".config/gtk-3.0/gtk.css".source = ../dotfiles/gtk/oxocarbon.css;
+    ".config/gtk-4.0/gtk.css".source = ../dotfiles/gtk/oxocarbon.css;
+    ".themes/Oxocarbon/index.theme".source = ../dotfiles/themes/Oxocarbon/index.theme;
+    ".themes/Oxocarbon/gtk-3.0/gtk.css".source = ../dotfiles/gtk/oxocarbon.css;
+    ".themes/Oxocarbon/gtk-4.0/gtk.css".source = ../dotfiles/gtk/oxocarbon.css;
     ".config/fetch/config".text = ''
       os
       host
@@ -114,6 +118,22 @@ in
       profile=gpu-hq
       watch-later-options-remove=sub-pos
     '';
+    ".config/hyfetch.json".text = builtins.toJSON {
+      preset = "transbian";
+      mode = "rgb";
+      light_dark = "dark";
+      lightness = 0.65;
+      color_align = {
+        mode = "horizontal";
+        custom_colors = [ ];
+        fore_back = null;
+      };
+      backend = "macchina";
+      args = null;
+      distro = null;
+      pride_month_shown = [ ];
+      pride_month_disable = false;
+    };
     ".config/mpv/scripts/modernz.lua".source =
       "${pkgs.mpvScripts.modernz}/share/mpv/scripts/modernz.lua";
     ".config/mpv/scripts/thumbfast.lua".source =

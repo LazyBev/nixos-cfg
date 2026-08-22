@@ -31,15 +31,15 @@ layout {
 
     focus-ring {
         width 0
-        active-color "#cba6f7"
-        inactive-color "#313244"
+        active-color "#929186"
+        inactive-color "#262626"
     }
 
     border {
         on
         width 2
-        active-color "#cba6f7"
-        inactive-color "#45475a"
+        active-color "#929186"
+        inactive-color "#525252"
     }
 
     preset-column-widths {
@@ -121,9 +121,6 @@ environment {
 
 spawn-at-startup "xwayland-satellite"
 spawn-at-startup "fcitx5" "-d"
-spawn-at-startup "dunst"
-spawn-at-startup "bash" "-lc" "sleep 1 && nm-applet --indicator"
-spawn-at-startup "swaybg" "-i" "/home/yari/.config/niri/larp.png" "-m" "fill"
 spawn-at-startup "noctalia"
 spawn-at-startup "keyclack" "--volume" "1.0"
 
@@ -141,15 +138,15 @@ binds {
     Alt+S      { spawn "steam"; }
     Alt+V            { spawn "alacritty" "-e" "btop"; }
     Alt+Shift+V      { spawn "vesktop"; }
-    Alt+D            { spawn "bemenu-run"; }
-    Alt+Y            { spawn "waypaper"; }
+    Alt+D            { spawn-sh "noctalia msg panel-toggle launcher"; }
+    Alt+Y            { spawn-sh "noctalia msg panel-open control-center notifications"; }
     Alt+Z            { spawn "alacritty" "-e" "impala-nm"; }
     Alt+Ctrl+M       { spawn "alacritty" "-e" "rmpc"; }
 
     Mod+Shift+L      { spawn "noctalia:session lock"; }
     Mod+Shift+P      { spawn "shutdown" "now"; }
     Mod+Ctrl+P       { spawn "reboot"; }
-    Alt+U            { spawn-sh "noctalia msg settings-toggle"; }
+    Alt+U            { spawn-sh "noctalia msg panel-open control-center media"; }
     Alt+Shift+U      { spawn-sh "noctalia msg bar-toggle"; }
     Alt+Shift+Backspace { quit; }
 
@@ -183,7 +180,8 @@ binds {
     Alt+Shift+Equal  { set-window-height "+10%"; }
 
     Alt+Comma        { consume-window-into-column; }
-    Alt+Period       { expel-window-from-column; }
+    Alt+Period       { spawn-sh "noctalia msg settings-toggle"; }
+    Ctrl+Alt+Period  { expel-window-from-column; }
     Alt+BracketLeft  { consume-or-expel-window-left; }
     Alt+BracketRight { consume-or-expel-window-right; }
 
@@ -219,17 +217,17 @@ binds {
     XF86AudioRaiseVolume { spawn-sh "noctalia msg volume-up"; }
     XF86AudioLowerVolume { spawn-sh "noctalia msg volume-down"; }
     XF86AudioMute        { spawn-sh "noctalia msg volume-mute"; }
-    XF86AudioMicMute     { spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SOURCE@" "toggle"; }
-    XF86AudioPlay        { spawn "playerctl" "play-pause"; }
-    XF86AudioNext        { spawn "playerctl" "next"; }
-    XF86AudioPrev        { spawn "playerctl" "previous"; }
+    XF86AudioMicMute     { spawn-sh "noctalia msg mic-mute"; }
+    XF86AudioPlay        { spawn-sh "noctalia msg media play-pause"; }
+    XF86AudioNext        { spawn-sh "noctalia msg media next"; }
+    XF86AudioPrev        { spawn-sh "noctalia msg media previous"; }
 
     XF86MonBrightnessUp   { spawn-sh "noctalia msg brightness-up"; }
     XF86MonBrightnessDown { spawn-sh "noctalia msg brightness-down"; }
 }
 
 window-rule {
-    geometry-corner-radius 0
+    geometry-corner-radius 12
     clip-to-geometry true
 }
 
