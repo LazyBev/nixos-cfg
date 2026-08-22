@@ -137,14 +137,10 @@ in
     wf-recorder
     slurp
     protonup-qt
-    waypaper
-    swaybg
     rmpc
 
     # ── Terminal / TUI ────────────────────────────────
     alacritty
-    bemenu
-    dunst
     networkmanagerapplet
     nemo
     motrix
@@ -167,6 +163,7 @@ in
     gawk
     nawk
     gnugrep
+    glib
     just
 
     # ── Development ───────────────────────────────────
@@ -266,5 +263,6 @@ in
     '')
     obsidian
     hyfetch
+    macchina
   ];
 }
