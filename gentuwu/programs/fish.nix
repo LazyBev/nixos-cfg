@@ -274,9 +274,9 @@
     '';
     shellAliases = {
       cat = "bat -p";
-      ls = "eza --icons";
-      ll = "eza -la --icons";
-      lt = "eza -la --icons --tree --level=2";
+      ls = "eza --icons=auto";
+      ll = "eza -la --icons=auto";
+      lt = "eza -la --icons=auto --tree --level=2";
       grep = "rg";
       py = "python3";
       nv = "doas hx";

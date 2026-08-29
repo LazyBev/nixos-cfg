@@ -138,6 +138,8 @@ in
     slurp
     protonup-qt
     rmpc
+    zrythm
+    carla
 
     # ── Terminal / TUI ────────────────────────────────
     alacritty
@@ -264,5 +266,24 @@ in
     obsidian
     hyfetch
     macchina
+    (writeShellScriptBin "flstudio" ''
+      export WINEPREFIX="$HOME/.flstudio-wine"
+      export WINEARCH=win64
+
+      if [ ! -d "$WINEPREFIX" ]; then
+        echo "Creating Wine prefix..."
+        wineboot --init
+        echo "Installing fonts and runtimes..."
+        winetricks fontsmooth-rgb gdiplus corefonts vcrun2019
+      fi
+
+      FL_EXE=$(find "$WINEPREFIX/drive_c/Program Files/Image-Line/" -name "FL64.exe" -print -quit 2>/dev/null)
+      if [ -z "$FL_EXE" ]; then
+        echo "FL64.exe not found. Download FL Studio 26.1.3 from https://www.image-line.com/fl-studio/download/"
+        echo "Then run: WINEPREFIX=\"$WINEPREFIX\" wine ~/Downloads/flstudio_win64_26.1.3.exe"
+        exit 1
+      fi
+      exec wine "$FL_EXE" "$@"
+    '')
   ];
 }

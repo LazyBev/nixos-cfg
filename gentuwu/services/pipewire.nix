@@ -5,6 +5,7 @@
     alsa.enable = true;
     alsa.support32Bit = true;
     pulse.enable = true;
+    jack.enable = true;
     wireplumber.enable = true;
     extraConfig.pipewire."90-nosuspend" = {
       "context.properties"."suspend-node-idle-timeout" = -1;

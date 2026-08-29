@@ -140,7 +140,9 @@ binds {
     Alt+Shift+V      { spawn "vesktop"; }
     Alt+D            { spawn-sh "noctalia msg panel-toggle launcher"; }
     Alt+Y            { spawn-sh "noctalia msg panel-open control-center notifications"; }
-    Alt+Z            { spawn "alacritty" "-e" "impala-nm"; }
+    Alt+I            { spawn-sh "noctalia msg panel-toggle wallpaper"; }
+    Alt+Z            { spawn-sh "noctalia msg panel-open control-center network"; }
+    Alt+Shift+Z      { spawn "alacritty" "-e" "impala-nm"; }
     Alt+Ctrl+M       { spawn "alacritty" "-e" "rmpc"; }
 
     Mod+Shift+L      { spawn "noctalia:session lock"; }

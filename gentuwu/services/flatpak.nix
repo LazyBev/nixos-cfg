@@ -11,6 +11,7 @@
       "com.stremio.Stremio"
       "org.vinegarhq.Sober"
       "com.spotify.Client"
+      "com.usebottles.bottles"
     ];
     overrides.global.Environment = {
       GTK_THEME = "catppuccin-mocha-mauve";
