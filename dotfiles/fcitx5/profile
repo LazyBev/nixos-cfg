@@ -4,7 +4,7 @@ Name="Group 1"
 # Layout
 Default Layout=gb
 # Default Input Method
-DefaultIM=keyboard-us-rus
+DefaultIM=keyboard-gb
 
 [Groups/0/Items/0]
 # Name
@@ -14,7 +14,7 @@ Layout=
 
 [Groups/0/Items/1]
 # Name
-Name=mozc
+Name=keyboard-us-rus
 # Layout
 Layout=
 
@@ -26,13 +26,7 @@ Layout=
 
 [Groups/0/Items/3]
 # Name
-Name=keyboard-de-qwerty
-# Layout
-Layout=
-
-[Groups/0/Items/4]
-# Name
-Name=keyboard-us-rus
+Name=mozc
 # Layout
 Layout=
 
