@@ -143,6 +143,75 @@
         end
       end
 
+      # ─── Fan control (NBFC) ──────────────────────────────
+      # Manual speed is persisted in ~/.local/state/fanspeed by the
+      # fan-control script; these fish wrappers just call it so both the
+      # niri keybinds (fan-control on PATH) and the terminal share one impl.
+
+      function fanauto --description 'Set fan control to automatic (profile-based)'
+        doas fan-control auto
+        and echo "$_C_GREEN ✓$_C_RESET fan control: $_C_BOLD auto$_C_RESET"
+      end
+
+      function fanboost --description 'Set fans to maximum speed (100%)'
+        doas fan-control boost
+        and echo "$_C_RED ●$_C_RESET fan boost: $_C_BOLD 100%$_C_RESET"
+      end
+
+      function fanup --description 'Increase manual fan speed by 20%'
+        doas fan-control up
+        and echo "$_C_BLUE ▲$_C_RESET fans: $_C_BOLD increased$_C_RESET"
+      end
+
+      function fandown --description 'Decrease manual fan speed by 20%'
+        doas fan-control down
+        and echo "$_C_BLUE ▼$_C_RESET fans: $_C_BOLD decreased$_C_RESET"
+      end
+
+      # ─── DNS mode (LainOS-style mediation) ────────────────
+      # Switches the resolution chain:
+      #   adguard    → AdGuardHome (DoH, boot default)
+      #   lainos     → dnsmasq → unbound (DNSSEC) → dnscrypt-proxy
+      #   plaintext  → dnsmasq → 1.1.1.1/9.9.9.9 (no encryption)
+      #   private    → dnsmasq → tor DNSPort (anonymized)
+      # Backed by the root helper `dns-mode-ctl` (see networking/dns-mode.nix).
+
+      function dns-mode --description 'Switch DNS chain: adguard|lainos|plaintext|private|status'
+        if test (count $argv) -eq 0
+          echo "$_C_YELLOW ⚠$_C_RESET usage: dns-mode <adguard|lainos|plaintext|private|status>"
+          echo "  $_C_DIM adguard    AdGuardHome frontend (DoH) — boot default$_C_RESET"
+          echo "  $_C_DIM lainos     dnsmasq → unbound (DNSSEC) → dnscrypt-proxy$_C_RESET"
+          echo "  $_C_DIM plaintext  dnsmasq → 1.1.1.1 / 9.9.9.9 (unfiltered)$_C_RESET"
+          echo "  $_C_DIM private    dnsmasq → tor DNSPort (anonymized)$_C_RESET"
+          echo "  $_C_DIM status     show current chain + daemons$_C_RESET"
+          return 1
+        end
+        switch $argv[1]
+          case adguard lainos plaintext private status
+            doas dns-mode-ctl $argv[1]
+          case '*'
+            echo "$_C_RED ✗$_C_RESET unknown mode: $argv[1]"
+            return 1
+        end
+        if test $argv[1] != status
+          echo ""
+          set -l _m (command cat /run/dnsmode/mode 2>/dev/null)
+          if test "$_m" = adguard
+            set _m "adguard (AdGuardHome → DoH)"
+          end
+          if test "$_m" = lainos
+            set _m "lainos (dnsmasq → unbound → dnscrypt-proxy)"
+          end
+          if test "$_m" = plaintext
+            set _m "plaintext (dnsmasq → 1.1.1.1 / 9.9.9.9)"
+          end
+          if test "$_m" = private
+            set _m "private (dnsmasq → tor)"
+          end
+          echo "$_C_GREEN ✓$_C_RESET dns-mode: $_C_BOLD$_m$_C_RESET"
+        end
+      end
+
       # ─── Nix helpers ──────────────────────────────────────
 
       function net-reset --description 'Flush all iptables and restore defaults'
@@ -242,6 +311,13 @@
         echo "$_C_CYAN ── network ──$_C_RESET"
         type -q net-reset && printf "  $_C_YELLOW●$_C_RESET %-14s %s\n" net-reset "Flush iptables, restore defaults"
         type -q vpn-openvpn && printf "  $_C_CYAN●$_C_RESET %-14s %s\n" vpn-openvpn "Switch to OpenVPN TCP/443 (info)"
+        type -q dns-mode  && printf "  $_C_CYAN●$_C_RESET %-14s %s\n" dns-mode  "Switch DNS chain (adguard/lainos/plaintext/private)"
+        echo ""
+        echo "$_C_CYAN ── fans ──$_C_RESET"
+        type -q fanauto   && printf "  $_C_BLUE●$_C_RESET %-14s %s\n" fanauto   "Fan control: auto (profile)"
+        type -q fanboost  && printf "  $_C_RED●$_C_RESET %-14s %s\n" fanboost  "Fan control: max 100%"
+        type -q fanup     && printf "  $_C_BLUE●$_C_RESET %-14s %s\n" fanup     "Fan control: speed +20%"
+        type -q fandown   && printf "  $_C_BLUE●$_C_RESET %-14s %s\n" fandown   "Fan control: speed -20%"
         echo ""
         echo "$_C_CYAN ── media ──$_C_RESET"
         type -q yt        && printf "  $_C_MAGENTA●$_C_RESET %-14s %s\n" yt        "Download video (best res, yt-dlp)"
@@ -268,6 +344,11 @@
       complete -c rec-off -d "Stop recording"
       complete -c net-reset -d "Flush iptables"
       complete -c vpn-openvpn -d "Switch to OpenVPN TCP/443"
+      complete -c dns-mode -d "Switch DNS chain" -xa "adguard lainos plaintext private status"
+      complete -c fanauto -d "Fan control: auto (profile)"
+      complete -c fanboost -d "Fan control: max 100%"
+      complete -c fanup -d "Fan control: speed +20%"
+      complete -c fandown -d "Fan control: speed -20%"
       complete -c yt -d "Download video (best res)" -r
       complete -c yt -l 1080 -d "Cap at 1080p"
       complete -c help -d "List all functions"

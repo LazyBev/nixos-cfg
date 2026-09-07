@@ -96,24 +96,24 @@
           Status = "locked";
         };
         "media.peerconnection.enabled" = {
-          Value = false;
-          Status = "locked";
+          Value = true;
+          Status = "default";
         };
         "media.peerconnection.ice.default_address_only" = {
-          Value = true;
-          Status = "locked";
+          Value = false;
+          Status = "default";
         };
         "media.peerconnection.ice.no_host" = {
-          Value = true;
-          Status = "locked";
+          Value = false;
+          Status = "default";
         };
         "media.peerconnection.ice.proxy_only" = {
-          Value = true;
-          Status = "locked";
+          Value = false;
+          Status = "default";
         };
         "media.peerconnection.ice.proxy_only_if_behind_proxy" = {
-          Value = true;
-          Status = "locked";
+          Value = false;
+          Status = "default";
         };
         "webgl.disabled" = {
           Value = true;
@@ -128,11 +128,11 @@
           Status = "locked";
         };
         "network.http.sendRefererHeader" = {
-          Value = 0;
+          Value = 2;
           Status = "default";
         };
         "network.http.referer.XOriginPolicy" = {
-          Value = 2;
+          Value = 1;
           Status = "default";
         };
         "network.http.referer.XOriginTrimmingPolicy" = {
@@ -140,11 +140,11 @@
           Status = "default";
         };
         "privacy.resistFingerprinting" = {
-          Value = true;
+          Value = false;
           Status = "locked";
         };
         "privacy.resistFingerprinting.letterboxing" = {
-          Value = true;
+          Value = false;
           Status = "locked";
         };
         "browser.send_pings" = {
@@ -172,8 +172,6 @@
       };
     };
   };
-
-  environment.etc."firefox/policies/policies.json".target = "librewolf/policies/policies.json";
 
   environment.etc."ublock-defaults/ublock-settings.json".text = builtins.toJSON {
     version = 1;

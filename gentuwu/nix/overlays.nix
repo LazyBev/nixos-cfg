@@ -107,5 +107,15 @@ _: {
         });
       }
     )
+    (
+      final: prev: {
+        nbfc-linux = prev.nbfc-linux.overrideAttrs (old: {
+          postInstall = (old.postInstall or "") + ''
+            install -Dm644 "${../..}/dotfiles/nbfc/cyborg-15-a12udx.json" \
+              "$out/share/nbfc/configs/Cyborg 15 A12UDX.json"
+          '';
+        });
+      }
+    )
   ];
 }

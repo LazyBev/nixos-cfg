@@ -14,4 +14,11 @@
       ];
     };
   };
+
+  systemd.tmpfiles.rules = [
+    "d /home/yari/.mpd 0755 yari users -"
+    "d /home/yari/.mpd/playlists 0755 yari users -"
+    "d /home/yari/.mpd/database 0755 yari users -"
+    "d /home/yari/Music 0755 yari users -"
+  ];
 }

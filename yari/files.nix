@@ -27,15 +27,10 @@ in
       IsRelative=1
       Path=rlubfwj2.default
       Default=1
-      [Profile1]
-      Name=i2p
-      IsRelative=1
-      Path=nhjvl52u.i2p
       [General]
       StartWithLastProfile=1
       Version=2
     '';
-    ".config/librewolf/librewolf/nhjvl52u.i2p/user.js".source = ../dotfiles/librewolf/i2p-user.js;
     ".config/qutebrowser/config.py".source = ../dotfiles/qutebrowser/config.py;
     ".config/qutebrowser/styles/youtube.css".source = ../dotfiles/qutebrowser/styles/youtube.css;
     ".config/gtk-3.0/settings.ini".text = ''
@@ -90,7 +85,7 @@ in
     '';
     ".config/rmpc/config.ron".source = ../dotfiles/rmpc/config.ron;
     ".config/rmpc/theme.ron".source = ../dotfiles/rmpc/theme.ron;
-    ".config/vesktop/settings.json".source = ../dotfiles/vesktop/vencord-settings.json;
+    ".config/vesktop/settings/settings.json".source = ../dotfiles/vesktop/vencord-settings.json;
     "Pictures/BURBER.png".source = ../media/Pictures/BURBER.png;
     "Pictures/YELLOW_BURBER.png".source = ../media/Pictures/YELLOW_BURBER.png;
     "Pictures/diinki.png".source = ../media/Pictures/diinki.png;
