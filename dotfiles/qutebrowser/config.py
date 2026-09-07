@@ -1,6 +1,18 @@
 config.load_autoconfig()
 
-c.content.user_stylesheets = ["~/.config/qutebrowser/styles/youtube.css"]
+# Omnisearch default engine + keyword
+c.url.searchengines["DEFAULT"] = "http://localhost:8087/search?q={}"
+c.url.searchengines["omni"] = "http://localhost:8087/search?q={}"
+
+# Adblock
+c.content.blocking.method = "auto"
+c.content.blocking.hosts.lists = [
+    "https://easylist.to/easylist/easylist.txt",
+    "https://easylist.to/easylist/easyprivacy.txt",
+    "https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/unbreak.txt",
+]
+
+# c.content.user_stylesheets = ["~/.config/qutebrowser/styles/youtube.css"]
 
 c.colors.statusbar.normal.bg = "#1e1e2e"
 c.colors.statusbar.command.bg = "#1e1e2e"

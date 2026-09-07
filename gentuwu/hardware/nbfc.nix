@@ -36,11 +36,32 @@ in
       };
     }
     (lib.mkIf nbfcCfg.enable {
-      environment.systemPackages = [ nbfcCfg.package ];
+      environment.systemPackages = [
+        (pkgs.writeShellScriptBin "fan-control" ''
+          # fan-control <auto|boost|up|down> — authoritative fan commands
+          # Manual speed is persisted in ~/.local/state/fanspeed so fanup/fandown
+          # operate relative to the last applied manual speed.
+          state="$HOME/.local/state/fanspeed"
+          notify() { notify-send -t 2500 "Fan control" "$1" 2>/dev/null; }
+          cur=0
+          [ -f "$state" ] && cur="$(cat "$state")"
+          clamp() { if [ "$1" -lt 0 ]; then echo 0; elif [ "$1" -gt 100 ]; then echo 100; else echo "$1"; fi; }
+          case "$1" in
+            auto)    nbfc set -a && notify "Fan control: auto (profile)" ;;
+            boost)   nbfc set -s 100 && { echo 100 > "$state"; notify "Fan boost: 100%"; } ;;
+            up)      next=$(clamp "$((cur + 20))"); nbfc set -s "$next" && { echo "$next" > "$state"; notify "Fans increased to $next%"; } ;;
+            down)    next=$(clamp "$((cur - 20))"); nbfc set -s "$next" && { echo "$next" > "$state"; notify "Fans decreased to $next%"; } ;;
+            *)       echo "usage: fan-control <auto|boost|up|down>" >&2; exit 1 ;;
+          esac
+        '')
+        (pkgs.writeShellScriptBin "fanauto" "exec fan-control auto")
+        (pkgs.writeShellScriptBin "fanboost" "exec fan-control boost")
+        (pkgs.writeShellScriptBin "fanup" "exec fan-control up")
+        (pkgs.writeShellScriptBin "fandown" "exec fan-control down")
+        nbfcCfg.package
+      ];
       systemd.tmpfiles.rules = [
         "d /var/lib/nbfc 0755 root root -"
-        "d /var/lib/nbfc/configs 0755 root root -"
-        "L+ /var/lib/nbfc/configs/${nbfcCfg.modelName}.json - - - - ${nbfcCfg.modelConfig}"
       ];
       systemd.services.nbfc = {
         description = "NoteBook FanControl";

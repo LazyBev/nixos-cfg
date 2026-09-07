@@ -1,7 +1,7 @@
 { pkgs, ... }: {
   users.users.yari = {
     isNormalUser = true;
-    uid = 1002;
+    uid = 1000;
     description = "yari";
     extraGroups = [
       "wheel"

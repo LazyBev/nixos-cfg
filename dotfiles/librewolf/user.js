@@ -29,3 +29,4 @@ user_pref("ui.systemUsesDarkTheme", 1);
 user_pref("widget.content.allow-gtk-dark-theme", true);
 
 user_pref("browser.urlbar.placeholderName", "OmniSearch");
+user_pref("keyword.URL", "http://localhost:8087/search?q=");

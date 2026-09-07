@@ -1,9 +1,9 @@
-{ pkgs, ... }: {
+{ pkgs, config, ... }: {
   programs.firejail = {
     enable = true;
     wrappedBinaries = {
       librewolf = {
-        executable = "${pkgs.librewolf}/bin/librewolf";
+        executable = "${config.programs.firefox.finalPackage}/bin/librewolf";
         profile = pkgs.writeText "librewolf.profile" ''
           noblacklist /usr/share/pixmaps
           noblacklist /home/yari/.config/librewolf

@@ -53,12 +53,13 @@ let
         url = "https://addons.mozilla.org/firefox/downloads/file/3940751/tabliss-2.6.0.xpi";
         sha256 = "de766810f234b1c13ffdb7047ae6cbf06ed79c3d08b51a07e4766fadff089c0f";
       })
+      (ffa {
+        name = "btroblox";
+        url = "https://addons.mozilla.org/firefox/downloads/file/4555645/btroblox-3.6.21.xpi";
+        sha256 = "87572eb0db7cbfb8572cfecbd356f1c1a354cd7d6df6af8b29e1aa0bd1aa00e5";
+      })
     ];
   };
-
-  librewolf-i2p = pkgs.writeShellScriptBin "librewolf-i2p" ''
-    exec ${pkgs.librewolf}/bin/librewolf --profile /home/yari/.config/librewolf/librewolf/nhjvl52u.i2p --no-remote "$@"
-  '';
 
   impala-nm = pkgs.stdenv.mkDerivation {
     pname = "impala-nm";
@@ -108,13 +109,11 @@ in
 
     # ── Browsers ──────────────────────────────────────
     librewolf-wrapped
-    librewolf-i2p
     qutebrowser
 
     # ── Messaging / Social ────────────────────────────
     signal-desktop
     vesktop
-    karere
     gajim
     thunderbird
     briar-desktop
@@ -124,6 +123,7 @@ in
 
     # ── Media ─────────────────────────────────────────
     mpv
+    freetube
     mpvScripts.modernz
     mpvScripts.thumbfast
     alsa-lib
@@ -133,7 +133,6 @@ in
     pipewire
     ffmpeg
     imv
-    gpu-screen-recorder
     wf-recorder
     slurp
     protonup-qt
@@ -173,7 +172,6 @@ in
     clang
     gcc
     ncurses
-    ghc
     go
     lua
     rustc
@@ -190,8 +188,6 @@ in
     cmake
     gnumake
     bmake
-    flex
-    byacc
     vscodium
     zathura
     devenv
@@ -230,7 +226,6 @@ in
     clamav
     keepassxc
     libpcap
-    bitwarden-desktop
 
     # ── System / Diagnostics ──────────────────────────
     pciutils
@@ -242,7 +237,6 @@ in
     caligula
     libnotify
     killall
-    htop
     fastfetch
     strace
     ltrace
