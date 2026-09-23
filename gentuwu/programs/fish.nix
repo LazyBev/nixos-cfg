@@ -168,26 +168,26 @@
         and echo "$_C_BLUE ▼$_C_RESET fans: $_C_BOLD decreased$_C_RESET"
       end
 
-      # ─── DNS mode (LainOS-style mediation) ────────────────
+      # ─── DNS mode ──────────────────────────────────────────
       # Switches the resolution chain:
-      #   adguard    → AdGuardHome (DoH, boot default)
-      #   lainos     → dnsmasq → unbound (DNSSEC) → dnscrypt-proxy
-      #   plaintext  → dnsmasq → 1.1.1.1/9.9.9.9 (no encryption)
-      #   private    → dnsmasq → tor DNSPort (anonymized)
+      #   filtered   → AdGuardHome (ad/tracker DNS filter + DoH, boot default)
+      #   validated  → dnsmasq → unbound (DNSSEC) → dnscrypt-proxy
+      #   plain      → dnsmasq → 1.1.1.1/9.9.9.9 (unencrypted direct)
+      #   tor        → dnsmasq → tor DNSPort (anonymized)
       # Backed by the root helper `dns-mode-ctl` (see networking/dns-mode.nix).
 
-      function dns-mode --description 'Switch DNS chain: adguard|lainos|plaintext|private|status'
+      function dns-mode --description 'Switch DNS chain: filtered|validated|plain|tor|status'
         if test (count $argv) -eq 0
-          echo "$_C_YELLOW ⚠$_C_RESET usage: dns-mode <adguard|lainos|plaintext|private|status>"
-          echo "  $_C_DIM adguard    AdGuardHome frontend (DoH) — boot default$_C_RESET"
-          echo "  $_C_DIM lainos     dnsmasq → unbound (DNSSEC) → dnscrypt-proxy$_C_RESET"
-          echo "  $_C_DIM plaintext  dnsmasq → 1.1.1.1 / 9.9.9.9 (unfiltered)$_C_RESET"
-          echo "  $_C_DIM private    dnsmasq → tor DNSPort (anonymized)$_C_RESET"
+          echo "$_C_YELLOW ⚠$_C_RESET usage: dns-mode <filtered|validated|plain|tor|status>"
+          echo "  $_C_DIM filtered   AdGuardHome (ad/tracker DNS filter + DoH) — boot default$_C_RESET"
+          echo "  $_C_DIM validated  dnsmasq → unbound (DNSSEC) → dnscrypt-proxy$_C_RESET"
+          echo "  $_C_DIM plain      dnsmasq → 1.1.1.1 / 9.9.9.9 (unencrypted)$_C_RESET"
+          echo "  $_C_DIM tor        dnsmasq → tor DNSPort (anonymized)$_C_RESET"
           echo "  $_C_DIM status     show current chain + daemons$_C_RESET"
           return 1
         end
         switch $argv[1]
-          case adguard lainos plaintext private status
+          case filtered validated plain tor status
             doas dns-mode-ctl $argv[1]
           case '*'
             echo "$_C_RED ✗$_C_RESET unknown mode: $argv[1]"
@@ -196,17 +196,17 @@
         if test $argv[1] != status
           echo ""
           set -l _m (command cat /run/dnsmode/mode 2>/dev/null)
-          if test "$_m" = adguard
-            set _m "adguard (AdGuardHome → DoH)"
+          if test "$_m" = filtered
+            set _m "filtered (AdGuardHome → DoH)"
           end
-          if test "$_m" = lainos
-            set _m "lainos (dnsmasq → unbound → dnscrypt-proxy)"
+          if test "$_m" = validated
+            set _m "validated (dnsmasq → unbound → dnscrypt-proxy)"
           end
-          if test "$_m" = plaintext
-            set _m "plaintext (dnsmasq → 1.1.1.1 / 9.9.9.9)"
+          if test "$_m" = plain
+            set _m "plain (dnsmasq → 1.1.1.1 / 9.9.9.9)"
           end
-          if test "$_m" = private
-            set _m "private (dnsmasq → tor)"
+          if test "$_m" = tor
+            set _m "tor (dnsmasq → tor)"
           end
           echo "$_C_GREEN ✓$_C_RESET dns-mode: $_C_BOLD$_m$_C_RESET"
         end
@@ -311,7 +311,7 @@
         echo "$_C_CYAN ── network ──$_C_RESET"
         type -q net-reset && printf "  $_C_YELLOW●$_C_RESET %-14s %s\n" net-reset "Flush iptables, restore defaults"
         type -q vpn-openvpn && printf "  $_C_CYAN●$_C_RESET %-14s %s\n" vpn-openvpn "Switch to OpenVPN TCP/443 (info)"
-        type -q dns-mode  && printf "  $_C_CYAN●$_C_RESET %-14s %s\n" dns-mode  "Switch DNS chain (adguard/lainos/plaintext/private)"
+        type -q dns-mode  && printf "  $_C_CYAN●$_C_RESET %-14s %s\n" dns-mode  "Switch DNS chain (filtered/validated/plain/tor)"
         echo ""
         echo "$_C_CYAN ── fans ──$_C_RESET"
         type -q fanauto   && printf "  $_C_BLUE●$_C_RESET %-14s %s\n" fanauto   "Fan control: auto (profile)"
@@ -344,7 +344,7 @@
       complete -c rec-off -d "Stop recording"
       complete -c net-reset -d "Flush iptables"
       complete -c vpn-openvpn -d "Switch to OpenVPN TCP/443"
-      complete -c dns-mode -d "Switch DNS chain" -xa "adguard lainos plaintext private status"
+      complete -c dns-mode -d "Switch DNS chain" -xa "filtered validated plain tor status"
       complete -c fanauto -d "Fan control: auto (profile)"
       complete -c fanboost -d "Fan control: max 100%"
       complete -c fanup -d "Fan control: speed +20%"
@@ -361,6 +361,8 @@
       grep = "rg";
       py = "python3";
       nv = "doas hx";
+      fm = "nnn -e -H -i -x";
+      rb = "cd ~/nixos-cfg && nh os switch \".#gentuwu\"";
       gc = "doas nix-collect-garbage -d && doas nix-collect-garbage --delete-old && nix store optimise";
     };
     shellAbbrs = {

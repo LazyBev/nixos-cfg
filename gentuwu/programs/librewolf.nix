@@ -139,6 +139,17 @@
           Value = 2;
           Status = "default";
         };
+        # Keep DNS on the system chain: trr.mode=5 disables Firefox's plaintext
+        # DoH/first-party resolver, so librewolf honors the sandbox resolv.conf
+        # → AdGuardHome (10.254.0.1) instead of leaking queries to Cloudflare.
+        "network.trr.mode" = {
+          Value = 5;
+          Status = "locked";
+        };
+        "network.trr.uri" = {
+          Value = "";
+          Status = "locked";
+        };
         "privacy.resistFingerprinting" = {
           Value = false;
           Status = "locked";

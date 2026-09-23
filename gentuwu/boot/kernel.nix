@@ -4,7 +4,12 @@
 }:
 {
   boot = {
-    kernelPackages = pkgs.linuxPackages_latest;
+    # 7.2.2 (linuxPackages_latest) ships without nf_nat_masquerade anywhere in
+    # its module closure — a 7.x mainline regression that kills NAT for
+    # waydroid (waydroid0 MASQUERADE), since the module simply is not built.
+    # Move to the stable branch where nf_nat_masquerade is present, letting
+    # waydroid + the netVM domains use stock Masquerade with no snat shims.
+    kernelPackages = pkgs.linuxPackages;
 
     kernelParams = [
       "init_on_alloc=1"

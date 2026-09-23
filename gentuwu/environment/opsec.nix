@@ -34,8 +34,8 @@ let
   };
 in
 {
-  # topaz (the privacy CLI) dependencies. System-level tools topaz shells
-  # out to but that are not part of the pentester or tor stacks.
+  # general opsec toolbelt: recon, malware-pattern mining, vuln scanning, and
+  # mixnet helpers (kept from the old topaz era; prune what you don't use).
   environment.systemPackages = with pkgs; [
     whois
     yara

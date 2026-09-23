@@ -7,7 +7,7 @@ in
     GTK_THEME = vars.gtkTheme;
     XCURSOR_THEME = vars.cursorTheme;
     XCURSOR_SIZE = "${toString vars.cursorSize}";
-    EDITOR = "hx";
+    EDITOR = "/run/current-system/sw/bin/hx";
     VISUAL = "hx";
     TERMINAL = "alacritty";
     BROWSER = "qutebrowser";

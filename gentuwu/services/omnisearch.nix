@@ -9,6 +9,9 @@
     });
     settings = {
       server = {
+        # 0.0.0.0 default in the omnisearch ini would expose the search server
+        # to the whole LAN; this service only serves the local user.
+        host = "127.0.0.1";
         domain = "http://localhost:8087";
       };
     };

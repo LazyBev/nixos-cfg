@@ -13,6 +13,7 @@
 
     kernelModules = [
       "kvm-amd"
+      "usbhid"
       "kvm-intel"
       "fuse"
       "msi-ec"

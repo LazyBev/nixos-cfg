@@ -1,32 +1,22 @@
+{ lib, pkgs, ... }:
 {
-  config,
-  lib,
-  pkgs,
-  ...
-}:
-{
-  # tun2socks: userspace SOCKS5 tunnel used by topaz --tor on
-  # (kernel modules are locked, so iptables/nft nat redirection is
-  # impossible; the tun-based route works without any modules)
+  # on-demand tor daemon: hosts the `dns-mode tor` DNSPort (5356) and, later,
+  # a transparent-proxy tornet domain. Runs as NixOS's fixed tor uid (35).
+  # NOT started at boot: arti owns the host SOCKS ports (9050/9150).
   environment.systemPackages = [
-    pkgs.tun2socks
     pkgs.arti
     pkgs.tor
-    pkgs.obfs4 # lyrebird: obfs4 + webtunnel
+    pkgs.obfs4 # lyrebird: obfs4 + webtunnel pluggable transport
     pkgs.snowflake
   ];
 
-  # real tor daemon for `topaz --tor tor on`. Runs as uid 35 (NixOS's fixed
-  # uid for tor), which is the uid topaz exempts from its tunnel so tor can
-  # reach relays directly. NOT started at boot: arti holds SocksPort 9050 by
-  # default, and topaz starts whichever backend it needs (stopping the other).
   services.tor = {
     enable = true;
     client.enable = true;
   };
   systemd.services.tor.wantedBy = lib.mkForce [ ];
 
-  # tor replaced by arti (rust tor client); SOCKS on 9050 + 9150.
+  # arti (rust tor client) holds SOCKS on 9050 + 9150.
   #
   # Bridge-ready: the pluggable transports below are wired up but no
   # bridge lines are active, so arti connects directly (works in the

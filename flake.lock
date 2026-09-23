@@ -388,11 +388,13 @@
         "ref": "refs/heads/master",
         "rev": "9c68a8ae6fb32f8a1660da392b9985a4ab3e7cb4",
         "revCount": 135,
+        "shallow": false,
         "type": "git",
         "url": "https://git.bwaaa.monster/omnisearch"
       },
       "original": {
         "rev": "9c68a8ae6fb32f8a1660da392b9985a4ab3e7cb4",
+        "shallow": false,
         "type": "git",
         "url": "https://git.bwaaa.monster/omnisearch"
       }

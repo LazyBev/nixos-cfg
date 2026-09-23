@@ -131,7 +131,7 @@ binds {
     Alt+Shift+Return { spawn "alacritty" "-e" "zellij"; }
     Alt+B            { spawn "qutebrowser"; }
     Alt+Shift+B      { spawn "librewolf"; }
-    Alt+T            { spawn "alacritty" "-e" "yazi"; }
+    Alt+T            { spawn "alacritty" "-e" "nnn" "-e" "-H" "-i" "-x"; }
     Alt+Shift+T      { spawn "nemo"; }
     Alt+E            { spawn "alacritty" "-e" "hx"; }
     Alt+Shift+E      { spawn "codium"; }

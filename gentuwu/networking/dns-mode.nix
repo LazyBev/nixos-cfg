@@ -8,25 +8,25 @@ let
   inherit (lib) mkForce;
 in
 {
-  # ─── dns-mode: AdGuardHome | LainOS chain | plaintext | private ──────────
+  # ─── dns-mode: AdGuardHome | validating chain | plain | tor ─────────────
   # Every daemon binds its own loopback port so the stacks can coexist; the
   # active mode just decides which endpoint systemd-resolved points at.
   #
-  #   127.0.0.1:53    AdGuardHome frontend (DoH upstreams)      [adguard]
-  #   127.0.0.1:5353  dnsmasq (stateless, cache-size=0)          [lainos/plaintext/private]
-  #   127.0.0.1:5354  unbound (DNSSEC validator)                 [lainos]
-  #   127.0.0.1:5355  dnscrypt-proxy (encrypted upstream)        [lainos]
-  #   127.0.0.1:5356  tor DNSPort (private mode)                 [private]
+  #   127.0.0.1:53    AdGuardHome frontend (DoH upstreams)      [filtered]
+  #   127.0.0.1:5353  dnsmasq (stateless, cache-size=0)          [validated/plain/tor]
+  #   127.0.0.1:5354  unbound (DNSSEC validator)                 [validated]
+  #   127.0.0.1:5355  dnscrypt-proxy (encrypted upstream)        [validated]
+  #   127.0.0.1:5356  tor DNSPort (anonymized)                   [tor]
   #
-  # Boot default = adguard (AdGuardHome owns :53, same as before). Switching
-  # is done by `dns-mode <adguard|lainos|plaintext|private>`.
+  # Boot default = filtered (AdGuardHome owns :53, same as before). Switching
+  # is done by `dns-mode <filtered|validated|plain|tor>`.
 
-  # ─── adguard mode: frontend managed by services/adguardhome (DoH) ───────
+  # ─── filtered mode: frontend managed by services/adguardhome (DoH) ──────
   # AdGuardHome owns 127.0.0.1:53 (see services/adguardhome.nix). The other
   # stacks bind their own ports below so all modes coexist until switched.
 
-  # ─── lainos / plaintext / private frontend: dnsmasq ─────────────────────
-  # Stateless forwarding resolver (mirrors LainOS `cache-size=0 no-negcache`).
+  # ─── validated / plain / tor frontend: dnsmasq ─────────────────────────
+  # Stateless forwarding resolver (`cache-size=0 no-negcache`).
   # Upstreams are injected at runtime via /run/dnsmode/servers so one binary
   # serves all three chain modes; `systemctl reload dnsmasq` re-reads it.
   services.dnsmasq = {
@@ -47,7 +47,6 @@ in
 
   systemd.services.dnsmasq = {
     wantedBy = mkForce [ ];
-    description = "Dnsmasq stateless DNS frontend (dns-mode)";
     preStart = ''
       mkdir -p /run/dnsmode
     '';
@@ -56,6 +55,9 @@ in
   systemd.tmpfiles.rules = [ "d /run/dnsmode 0755 root root -" ];
 
   # ─── DNSSEC validator: unbound (forwards to dnscrypt-proxy) ──────────────
+  # `module-config` is intentionally NOT set: it defaults to "validator iterator"
+  # (the whole point of this hop), and the NixOS settings renderer writes the
+  # string unquoted, which 1.26.0's parser rejects (`unknown keyword 'iterator'`).
   services.unbound = {
     enable = true;
     settings = {
@@ -66,8 +68,6 @@ in
         access-control = [ "127.0.0.0/8 allow" ];
         hide-identity = true;
         hide-version = true;
-        # DNSSEC validation is the whole point of this hop.
-        module-config = "validator iterator";
       };
       forward-zone = [
         {
@@ -80,7 +80,6 @@ in
 
   systemd.services.unbound = {
     wantedBy = mkForce [ ];
-    description = "Unbound DNSSEC resolver (dns-mode lanos chain)";
   };
 
   # ─── Encrypted upstream: dnscrypt-proxy ───────────────────────────────────
@@ -108,13 +107,12 @@ in
 
   systemd.services.dnscrypt-proxy = {
     wantedBy = mkForce [ ];
-    description = "dnscrypt-proxy encrypted DNS upstream (dns-mode)";
     after = [ "network-online.target" ];
   };
 
-  # ─── Private mode: tor DNSPort ───────────────────────────────────────────
+  # ─── tor mode: DNSPort ─────────────────────────────────────────────────
   # tor DNSPort answers on 127.0.0.1:5356; dnsmasq forwards there. tor stays
-  # stopped at boot (topaz/arti own SOCKS); `dns-mode private` starts it.
+  # stopped at boot (arti holds host SOCKS); `dns-mode tor` starts it.
   services.tor.settings.DNSPort = {
     addr = "127.0.0.1";
     port = 5356;
@@ -137,46 +135,50 @@ in
         chmod 644 "$state"
       }
 
-      # systemd-resolved: set DNS for every real link to the active frontend.
+      # systemd-resolved: set DNS for every real link to the active frontend,
+      # with plain public resolvers as a trailing fallback so resolved can
+      # step past a dead local frontend per query.
+      fallback_resolvers="1.1.1.1 1.0.0.1"
       linkdns() {
         for iface in $(resolvectl 2>/dev/null | sed -n 's/^Link [0-9]* (\([^)]*\)):*$/\1/p'); do
           case "$iface" in lo|docker*) continue;; esac
-          resolvectl dns "$iface" "$1" 2>/dev/null
+          resolvectl dns "$iface" "$@" $fallback_resolvers 2>/dev/null
         done
       }
 
       case "$mode" in
-        adguard)
+        filtered)
           systemctl stop dnsmasq unbound dnscrypt-proxy tor 2>/dev/null
+          systemctl restart adguardhome 2>/dev/null
           systemctl restart arti 2>/dev/null
           linkdns 127.0.0.1
-          echo adguard > /run/dnsmode/mode
+          echo filtered > /run/dnsmode/mode
           ;;
-        lainos)
+        validated)
           systemctl stop tor 2>/dev/null
           systemctl restart arti 2>/dev/null
           systemctl start dnscrypt-proxy unbound 2>/dev/null
           write_upstream "127.0.0.1#5354"
           systemctl restart dnsmasq
           linkdns "127.0.0.1#5353"
-          echo lainos > /run/dnsmode/mode
+          echo validated > /run/dnsmode/mode
           ;;
-        plaintext)
+        plain)
           systemctl stop unbound dnscrypt-proxy tor 2>/dev/null
           systemctl restart arti 2>/dev/null
           write_upstream "1.1.1.1" "9.9.9.9"
           systemctl restart dnsmasq
           linkdns "127.0.0.1#5353"
-          echo plaintext > /run/dnsmode/mode
+          echo plain > /run/dnsmode/mode
           ;;
-        private)
+        tor)
           systemctl stop unbound dnscrypt-proxy 2>/dev/null
           systemctl stop arti 2>/dev/null
           systemctl start tor 2>/dev/null
           write_upstream "127.0.0.1#5356"
           systemctl restart dnsmasq
           linkdns "127.0.0.1#5353"
-          echo private > /run/dnsmode/mode
+          echo tor > /run/dnsmode/mode
           ;;
         status)
           echo "── DNS mode status ──"
@@ -191,7 +193,7 @@ in
           done
           ;;
         *)
-          echo "usage: dns-mode <adguard|lainos|plaintext|private|status>" >&2
+          echo "usage: dns-mode <filtered|validated|plain|tor|status>" >&2
           exit 1
           ;;
       esac

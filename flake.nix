@@ -17,7 +17,7 @@
       url = "github:gmodena/nix-flatpak/?ref=latest";
     };
     omnisearch = {
-      url = "git+https://git.bwaaa.monster/omnisearch?rev=9c68a8ae6fb32f8a1660da392b9985a4ab3e7cb4";
+      url = "git+https://git.bwaaa.monster/omnisearch?rev=9c68a8ae6fb32f8a1660da392b9985a4ab3e7cb4&shallow=0";
     };
     noctalia = {
       url = "github:noctalia-dev/noctalia";

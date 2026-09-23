@@ -135,6 +135,7 @@ in
     imv
     wf-recorder
     slurp
+    libresprite
     protonup-qt
     rmpc
     zrythm
@@ -153,13 +154,13 @@ in
     ripgrep
     rlwrap
     zellij
-    yazi
     btop
     ncdu
     tree
     unar
     unzip
     zip
+    nnn
     gnused
     gawk
     nawk
@@ -179,7 +180,10 @@ in
     rustup
     cargo
     zig
-    odin
+    (writeShellScriptBin "odin" ''
+      export LIBRARY_PATH="${pkgs.raylib}/lib''${LIBRARY_PATH:+:$LIBRARY_PATH}"
+      exec ${pkgs.odin}/bin/odin "$@"
+    '')
     ols
     ocaml
     nasm
@@ -244,6 +248,7 @@ in
     android-tools
 
     # ── Misc ──────────────────────────────────────────
+    hyperfine
     impala-nm
     fetch
     keyclack

@@ -133,13 +133,6 @@ in
       "${pkgs.mpvScripts.modernz}/share/mpv/scripts/modernz.lua";
     ".config/mpv/scripts/thumbfast.lua".source =
       "${pkgs.mpvScripts.thumbfast}/share/mpv/scripts/thumbfast.lua";
-    ".config/yazi/yazi.toml".source = ../dotfiles/yazi/yazi.toml;
-    ".config/yazi/keymap.toml".source = ../dotfiles/yazi/keymap.toml;
-    ".config/yazi/theme.toml".source = ../dotfiles/yazi/theme.toml;
-    ".config/yazi/flavors/dracula.yazi/flavor.toml".source =
-      ../dotfiles/yazi/flavors/dracula.yazi/flavor.toml;
-    ".config/yazi/flavors/dracula.yazi/tmtheme.xml".source =
-      ../dotfiles/yazi/flavors/dracula.yazi/tmtheme.xml;
     ".config/helix/config.toml".source = ../dotfiles/helix/config.toml;
     ".config/helix/languages.toml".source = ../dotfiles/helix/languages.toml;
     ".config/asm-lsp/.asm-lsp.toml".text =
