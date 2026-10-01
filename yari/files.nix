@@ -85,7 +85,7 @@ in
     '';
     ".config/rmpc/config.ron".source = ../dotfiles/rmpc/config.ron;
     ".config/rmpc/theme.ron".source = ../dotfiles/rmpc/theme.ron;
-    ".config/vesktop/settings/settings.json".source = ../dotfiles/vesktop/vencord-settings.json;
+    ".config/vesktop/settings.json".source = ../dotfiles/vesktop/vencord-settings.json;
     "Pictures/BURBER.png".source = ../media/Pictures/BURBER.png;
     "Pictures/YELLOW_BURBER.png".source = ../media/Pictures/YELLOW_BURBER.png;
     "Pictures/diinki.png".source = ../media/Pictures/diinki.png;

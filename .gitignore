@@ -27,3 +27,6 @@ result-*
 # large media
 media/Videos/
 media/Videos/wallpaper.mp4
+
+# accidentally-committed nix daemon state / store copy (was ~1.1G)
+/nix/

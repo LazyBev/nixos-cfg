@@ -9,6 +9,24 @@
       set -g fish_greeting
       set -gx EZA_COLORS "di=96:fi=37:ex=92:ln=95:or=91:mi=91:su=93:sf=93:wu=93:sg=93:pi=93:so=93:bd=94:cd=94"
 
+      # ─── Shared helpers ───────────────────────────────────
+
+      # Titled box header used by `help`, `gh-pr`, and `vpn-openvpn`.
+      function _box --description 'Print a titled box header'
+        set -l title (string join ' ' $argv)
+        set -l inner 54
+        set -l len (string length -- "$title")
+        if test $len -ge $inner
+          set inner (math "$len + 2")
+        end
+        set -l slack (math "$inner - $len")
+        set -l l (math "floor($slack / 2)")
+        set -l r (math "floor($slack - $l)")
+        printf "%s╭%s╮%s\n" "$_C_CYAN" (string repeat $inner '─') "$_C_RESET"
+        printf "%s│%s %s %s%s│%s\n" "$_C_CYAN" (string repeat $l '─') "$_C_BOLD$title$_C_RESET" (string repeat $r '─') "$_C_CYAN" "$_C_RESET"
+        printf "%s╰%s╯%s\n" "$_C_CYAN" (string repeat $inner '─') "$_C_RESET"
+      end
+
       function doas --wraps doas
         if test "$argv" = "!!"
             command doas (history -n 1)

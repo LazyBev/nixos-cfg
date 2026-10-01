@@ -97,6 +97,48 @@ let
     '';
     meta.mainProgram = "fetch";
   };
+
+  # Language server for Hare. Upstream keeps it out of tree from nixpkgs, and
+  # its Makefile leaves HAREFLAGS empty, so we drive harec directly to still
+  # pick up the release + arch flags from hareHook's NIX_HAREFLAGS.
+  hare-lsp = pkgs.stdenv.mkDerivation (finalAttrs: {
+    pname = "hare-lsp";
+    version = "0.2.1";
+    src = pkgs.fetchFromSourcehut {
+      owner = "~whynothugo";
+      repo = "hare-lsp";
+      # Upstream tag is "v0.2.1", but fetchFromSourcehut strips a leading "v"
+      # off `tag`, which 404s against sourcehut's /archive/ endpoint. Pin rev.
+      rev = "ca78f9f79eee38a7b1e112c4616f2333702905f4";
+      hash = "sha256-uXH/T6JOA9cBFcLhCwY0mf4AA/VSrtVEiKfpAiVq2Ik=";
+    };
+
+    nativeBuildInputs = [
+      pkgs.hareHook
+      pkgs.hareThirdParty.hare-json
+    ];
+
+    buildPhase = ''
+      runHook preBuild
+      hare build $NIX_HAREFLAGS -o hare-lsp ./lsp/server/
+      runHook postBuild
+    '';
+
+    installPhase = ''
+      runHook preInstall
+      install -Dm755 hare-lsp -t $out/bin/
+      install -Dm644 LICENCE -t $out/share/licenses/hare-lsp/
+      runHook postInstall
+    '';
+
+    meta = {
+      homepage = "https://git.sr.ht/~whynothugo/hare-lsp/";
+      description = "Language server for the Hare programming language";
+      license = pkgs.lib.licenses.isc;
+      platforms = pkgs.hareHook.meta.platforms;
+      mainProgram = "hare-lsp";
+    };
+  });
 in
 {
   hjem.users.yari.packages = with pkgs; [
@@ -130,7 +172,6 @@ in
     pavucontrol
     playerctl
     sox
-    pipewire
     ffmpeg
     imv
     wf-recorder
@@ -161,10 +202,7 @@ in
     unzip
     zip
     nnn
-    gnused
-    gawk
     nawk
-    gnugrep
     glib
     just
 
@@ -172,7 +210,6 @@ in
     tinycc
     clang
     gcc
-    ncurses
     go
     lua
     rustc
@@ -180,6 +217,8 @@ in
     rustup
     cargo
     zig
+    hare
+    hare-lsp
     (writeShellScriptBin "odin" ''
       export LIBRARY_PATH="${pkgs.raylib}/lib''${LIBRARY_PATH:+:$LIBRARY_PATH}"
       exec ${pkgs.odin}/bin/odin "$@"
@@ -195,7 +234,6 @@ in
     vscodium
     zathura
     devenv
-    raylib
     help2man
     pkg-config
     opencode
@@ -208,10 +246,7 @@ in
     ]))
 
     # ── Network / DNS ─────────────────────────────────
-    curl
-    rsync
     iw
-    bind
     dnsutils
     ldns
     ucspi-tcp
@@ -221,13 +256,11 @@ in
     yt-dlp
 
     # ── Privacy / Security ────────────────────────────
-    tor
     tor-browser
     arti
     torsocks
     proxychains
     hashcat
-    clamav
     keepassxc
     libpcap
 
@@ -242,7 +275,6 @@ in
     libnotify
     killall
     fastfetch
-    strace
     ltrace
     inotify-tools
     android-tools
@@ -253,7 +285,6 @@ in
     fetch
     keyclack
     hyprpicker
-    opentabletdriver
     ncurses5
     xwayland-satellite
     qt6Packages.qt6ct
