@@ -128,9 +128,14 @@ in
           # behind the host's live egress address with an explicit snat.
           # Egress address is resolved at runtime — build-time store paths
           # can't know the DHCP-leased IP.
-          read -r _ _ _ _ _ _ EGRESS _ < <(${ip} -4 route get 1.1.1.1)
+          #
+          # The output device must be passed explicitly: bare `snat to <addr>`
+          # leaves nftables to resolve the interface from the address itself,
+          # which fails with "Could not process rule: No such file or
+          # directory". Field 5 is `dev`, field 7 is `src`.
+          read -r _ _ _ _ EGRESS_DEV _ EGRESS _ < <(${ip} -4 route get 1.1.1.1)
           ${nft} add rule inet netvm-${name} postrouting \
-            ip saddr ${d.sandbox}/32 snat to "$EGRESS"
+            ip saddr ${d.sandbox}/32 snat to "$EGRESS" dev "$EGRESS_DEV"
         '';
       };
     }) domains

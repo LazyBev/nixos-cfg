@@ -14,7 +14,7 @@
       "com.usebottles.bottles"
     ];
     overrides.global.Environment = {
-      GTK_THEME = "catppuccin-mocha-mauve";
+      GTK_THEME = "Oxocarbon";
       ICON_THEME = "Papirus-Dark";
     };
   };
