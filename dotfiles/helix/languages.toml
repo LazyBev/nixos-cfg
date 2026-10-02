@@ -1,6 +1,16 @@
 [language-server.asm-lsp]
 command = "asm-lsp"
 
+[language-server.hare-lsp]
+command = "hare-lsp"
+args = ["-S"]
+
+[[language]]
+name = "hare"
+scope = "source.hare"
+language-servers = ["hare-lsp"]
+file-types = ["hare"]
+
 [[language]]
 name = "asm"
 scope = "source.asm"
