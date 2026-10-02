@@ -320,12 +320,6 @@
         type -q gitwho    && printf "  $_C_BLUE●$_C_RESET %-14s %s\n" gitwho    "Set git identity"
         type -q gh-pr     && printf "  $_C_CYAN●$_C_RESET %-14s %s\n" gh-pr     "GitHub PR list"
         echo ""
-        echo "$_C_CYAN ── recording ──$_C_RESET"
-        type -q record    && printf "  $_C_RED●$_C_RESET %-14s %s\n" record    "Record screen (wf-recorder)"
-        type -q rec-status && printf "  $_C_RED●$_C_RESET %-14s %s\n" rec-status "Check recording status"
-        type -q rec-on    && printf "  $_C_RED●$_C_RESET %-14s %s\n" rec-on    "Start recording"
-        type -q rec-off   && printf "  $_C_RED●$_C_RESET %-14s %s\n" rec-off   "Stop recording"
-        echo ""
         echo "$_C_CYAN ── network ──$_C_RESET"
         type -q net-reset && printf "  $_C_YELLOW●$_C_RESET %-14s %s\n" net-reset "Flush iptables, restore defaults"
         type -q vpn-openvpn && printf "  $_C_CYAN●$_C_RESET %-14s %s\n" vpn-openvpn "Switch to OpenVPN TCP/443 (info)"
@@ -346,21 +340,12 @@
 
       complete -c sysupd -d "Update & rebuild NixOS" -r
       complete -c update -d "Rebuild NixOS" -r
-      complete -c dev -d "Enter dev shell" -r
-      complete -c record -d "Record screen" -s o -l output -r -d "Output name"
-      complete -c record -s s -l select -d "Select region"
-      complete -c record -s A -l area -r -d "Geometry"
-      complete -c record -s f -l file -r -d "Output file"
-      complete -c record -s a -l no-audio -d "No audio"
-      complete -c record -s h -l help -d "Show help"
-      complete -c gp -d "Git add, commit, push" -r
+complete -c dev -d "Enter dev shell" -r
+complete -c gp -d "Git add, commit, push" -r
       complete -c gitwho -d "Set git user" -r
       complete -c gh-pr -d "GitHub PR list" -r
-      complete -c flake-init -d "Initialize NixOS flake" -r
-      complete -c rec-status -d "Check recording status"
-      complete -c rec-on -d "Start recording"
-      complete -c rec-off -d "Stop recording"
-      complete -c net-reset -d "Flush iptables"
+complete -c flake-init -d "Initialize NixOS flake" -r
+complete -c net-reset -d "Flush iptables"
       complete -c vpn-openvpn -d "Switch to OpenVPN TCP/443"
       complete -c dns-mode -d "Switch DNS chain" -xa "filtered validated plain tor status"
       complete -c fanauto -d "Fan control: auto (profile)"

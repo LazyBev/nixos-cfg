@@ -123,19 +123,21 @@ in
             }
           ''}
 
-          # masquerade is NOT available on this kernel (nf_nat_masquerade is
-          # neither built-in nor shipped as a module), so hide the sandbox
-          # behind the host's live egress address with an explicit snat.
-          # Egress address is resolved at runtime — build-time store paths
-          # can't know the DHCP-leased IP.
+          # masquerade, NOT an explicit `snat to <addr>`.
           #
-          # The output device must be passed explicitly: bare `snat to <addr>`
-          # leaves nftables to resolve the interface from the address itself,
-          # which fails with "Could not process rule: No such file or
-          # directory". Field 5 is `dev`, field 7 is `src`.
-          read -r _ _ _ _ EGRESS_DEV _ EGRESS _ < <(${ip} -4 route get 1.1.1.1)
+          # An earlier revision avoided masquerade believing nf_nat_masquerade
+          # was missing. It is not: CONFIG_NF_NAT_MASQUERADE is built into this
+          # kernel and the nft_masq module is loaded, so masquerade works.
+          #
+          # masquerade resolves the egress address at packet time instead of at
+          # rule-insert time, which is what fixes the startup failure:
+          #   Error: Could not process rule: No such file or directory
+          #   add rule inet netvm-* postrouting ip saddr ... snat to 192.168.1.121
+          # `snat to` makes nftables resolve an address/interface while the
+          # veth is still being brought up, and it has nothing to resolve
+          # against yet. It also broke on every DHCP lease change.
           ${nft} add rule inet netvm-${name} postrouting \
-            ip saddr ${d.sandbox}/32 snat to "$EGRESS" dev "$EGRESS_DEV"
+            ip saddr ${d.sandbox}/32 masquerade
         '';
       };
     }) domains

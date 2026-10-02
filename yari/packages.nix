@@ -142,9 +142,6 @@ let
 in
 {
   hjem.users.yari.packages = with pkgs; [
-    (writeShellScriptBin "rust-doc" ''
-      exec xdg-open "${rustc.doc}/share/doc/docs/html/index.html"
-    '')
     (writeShellScriptBin "odin-doc" ''
       exec xdg-open "$HOME/.local/share/doc/odin/odin-lang.org/docs/index.html"
     '')
@@ -179,8 +176,6 @@ in
     libresprite
     protonup-qt
     rmpc
-    zrythm
-    carla
 
     # ── Terminal / TUI ────────────────────────────────
     alacritty
@@ -214,7 +209,6 @@ in
     lua
     rustc
     rustfmt
-    rustup
     cargo
     zig
     hare
@@ -252,7 +246,6 @@ in
     ucspi-tcp
     openssl
     proton-vpn
-    proton-vpn-cli
     yt-dlp
 
     # ── Privacy / Security ────────────────────────────
@@ -288,7 +281,6 @@ in
     ncurses5
     xwayland-satellite
     qt6Packages.qt6ct
-    libsForQt5.qt5ct
     (pkgs.writeShellScriptBin "artix-games-launcher" ''
       export GDK_BACKEND=x11
       exec ${pkgs.artix-games-launcher}/bin/artix-games-launcher "$@"
