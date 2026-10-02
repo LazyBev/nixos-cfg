@@ -8,8 +8,10 @@ args = ["-S"]
 [[language]]
 name = "hare"
 scope = "source.hare"
+grammar = "hare"
 language-servers = ["hare-lsp"]
-file-types = ["hare"]
+file-types = ["ha"]
+roots = ["hare.toml"]
 
 [[language]]
 name = "asm"
