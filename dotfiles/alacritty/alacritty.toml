@@ -1,5 +1,9 @@
 [window]
-opacity = 0.90
+# Closest to glass on Niri: high transparency, no blur available.
+opacity = 0.70
+
+[terminal]
+shell = { program = "fish" }
 
 [font]
 size = 15
@@ -8,29 +12,31 @@ bold.family = "Monocraft"
 italic.family = "Monocraft"
 bold_italic.family = "Monocraft"
 
+# Black Metal (Burzum) base16. Managed by hand (stylix doesn't touch this
+# hjem file) — keep in sync with stylix.base16Scheme if you swap variant.
 [colors.primary]
-background = "#1e1e2e"
-foreground = "#cdd6f4"
+background = "#000000"
+foreground = "#c1c1c1"
 
 [colors.normal]
-black = "#45475a"
-red = "#f38ba8"
-green = "#a6e3a1"
-yellow = "#f9e2af"
-blue = "#89b4fa"
-magenta = "#f5c2e7"
-cyan = "#94e2d5"
-white = "#bac2de"
+black = "#222222"
+red = "#5f8787"
+green = "#99bbaa"
+yellow = "#ddeecc"
+blue = "#888888"
+magenta = "#999999"
+cyan = "#aaaaaa"
+white = "#c1c1c1"
 
 [colors.bright]
-black = "#585b70"
-red = "#f38ba8"
-green = "#a6e3a1"
-yellow = "#f9e2af"
-blue = "#89b4fa"
-magenta = "#f5c2e7"
-cyan = "#94e2d5"
-white = "#a6adc8"
+black = "#333333"
+red = "#5f8787"
+green = "#99bbaa"
+yellow = "#ddeecc"
+blue = "#888888"
+magenta = "#999999"
+cyan = "#aaaaaa"
+white = "#c1c1c1"
 
 [scrolling]
 history = 10000

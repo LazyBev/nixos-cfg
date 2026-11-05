@@ -1,0 +1,3976 @@
+=== flake.nix ===
+{
+  description = "gentuwu's NixOS configuration";
+
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    flake-parts.url = "github:hercules-ci/flake-parts";
+    easy-hosts.url = "github:tgirlcloud/easy-hosts";
+    niri-nix = {
+      url = "git+https://codeberg.org/BANanaD3V/niri-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    hjem = {
+      url = "github:feel-co/hjem";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    nix-flatpak = {
+      url = "github:gmodena/nix-flatpak/?ref=latest";
+    };
+    omnisearch = {
+      url = "git+https://git.bwaaa.monster/omnisearch?rev=9c68a8ae6fb32f8a1660da392b9985a4ab3e7cb4&shallow=0";
+    };
+    noctalia = {
+      url = "github:noctalia-dev/noctalia";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    stylix = {
+      url = "github:nix-community/stylix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    nirimod = {
+      url = "github:srinivasr/nirimod";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+  };
+
+  outputs =
+    inputs@{ flake-parts, nixpkgs, ... }:
+    flake-parts.lib.mkFlake { inherit inputs; } (
+      { config, lib, ... }:
+      let
+        isNix = f: lib.hasSuffix ".nix" f;
+        hostModules = builtins.filter isNix (nixpkgs.lib.filesystem.listFilesRecursive ./gentuwu);
+        homeModules = builtins.filter isNix (nixpkgs.lib.filesystem.listFilesRecursive ./yari);
+      in
+      {
+        imports = [
+          inputs.easy-hosts.flakeModule
+        ];
+
+        config = {
+          systems = [ "x86_64-linux" ];
+
+          perSystem = { pkgs, ... }: {
+            formatter = pkgs.nixfmt;
+          };
+
+          easy-hosts = {
+            useGlobalPkgs = false;
+
+            shared = {
+              modules = [ ];
+              specialArgs = {
+                inherit inputs;
+                inherit (inputs)
+                  omnisearch
+                  stylix
+                  noctalia
+                  ;
+              };
+            };
+
+            hosts = {
+              gentuwu = {
+                arch = "x86_64";
+                class = "nixos";
+                deployable = true;
+                modules = [
+                  {
+                    _module.args = {
+                      inherit inputs;
+                      inherit (inputs) omnisearch;
+                    };
+                  }
+                  inputs.niri-nix.nixosModules.default
+                  inputs.hjem.nixosModules.default
+                  inputs.nix-flatpak.nixosModules.nix-flatpak
+                  inputs.omnisearch.nixosModules.default
+                  inputs.stylix.nixosModules.stylix
+                  inputs.noctalia.nixosModules.default
+                ]
+                ++ hostModules
+                ++ homeModules;
+              };
+            };
+          };
+        };
+      }
+    );
+}
+
+=== gentuwu/boot/kernel.nix ===
+{
+  pkgs,
+  ...
+}:
+{
+  boot = {
+    # 7.2.2 (linuxPackages_latest) ships without nf_nat_masquerade anywhere in
+    # its module closure — a 7.x mainline regression that kills NAT for
+    # waydroid (waydroid0 MASQUERADE), since the module simply is not built.
+    # Move to the stable branch where nf_nat_masquerade is present, letting
+    # waydroid + the netVM domains use stock Masquerade with no snat shims.
+    kernelPackages = pkgs.linuxPackages;
+
+    kernelParams = [
+      "init_on_alloc=1"
+      "init_on_free=1"
+      "slab_nomerge"
+      "pti=on"
+      "page_poison=1"
+      "page_alloc.shuffle=1"
+      "randomize_kstack_offset=on"
+      "vsyscall=none"
+      "debugfs=off"
+      "quiet"
+      "systemd.show_status=error"
+    ];
+
+    blacklistedKernelModules = [
+      "dccp"
+      "sctp"
+      "rds"
+      "tipc"
+    ];
+  };
+}
+
+=== gentuwu/boot/loader.nix ===
+_: {
+  boot.loader = {
+    grub = {
+      enable = false;
+    };
+    timeout = 5;
+    efi.canTouchEfiVariables = true;
+    systemd-boot.enable = false;
+    limine = {
+      enable = true;
+      efiSupport = true;
+    };
+  };
+}
+
+=== gentuwu/boot/modules.nix ===
+{
+  config,
+  ...
+}:
+{
+  boot = {
+    initrd.availableKernelModules = [
+      "ahci"
+      "usbhid"
+    ];
+
+    extraModulePackages = with config.boot.kernelPackages; [ msi-ec ];
+
+    kernelModules = [
+      "kvm-amd"
+      "usbhid"
+      "kvm-intel"
+      "fuse"
+      "msi-ec"
+      "nft_reject"
+      "nf_reject_ipv4"
+      "nf_reject_ipv6"
+      "nft_reject_inet"
+    ];
+  };
+}
+
+=== gentuwu/boot/plymouth.nix ===
+_: {
+  boot.plymouth.enable = true;
+}
+
+=== gentuwu/console/console.nix ===
+_: {
+  console.keyMap = "uk";
+}
+
+=== gentuwu/environment/opsec.nix ===
+{
+  pkgs,
+  lib,
+  ...
+}:
+let
+  # nixpkgs' `nym` attr tracks 2024.14, whose client predates the current
+  # mainnet auth protocol (gateways reject it: "the legacy authentication
+  # method is no longer supported"). Package the official release binary
+  # instead; autoPatchelfHook fixes the ELF interpreter for NixOS.
+  nym-socks5-client-bin = pkgs.stdenv.mkDerivation {
+    pname = "nym-socks5-client-bin";
+    version = "2026.15-bydgoszcz";
+
+    src = pkgs.fetchurl {
+      url = "https://github.com/nymtech/nym/releases/download/nym-binaries-v2026.15-bydgoszcz/nym-socks5-client";
+      sha256 = "sha256-uxnKeFqDkK2LN75iFEf9zR3jGbb6q60TOp74xppYuLQ=";
+    };
+
+    nativeBuildInputs = [ pkgs.autoPatchelfHook ];
+    buildInputs = [ pkgs.stdenv.cc.cc.lib ];
+
+    dontUnpack = true;
+    installPhase = ''
+      mkdir -p $out/bin
+      install -m755 $src $out/bin/nym-socks5-client
+    '';
+
+    meta = {
+      description = "Nym socks5 client (official release binary)";
+      license = lib.licenses.asl20;
+      mainProgram = "nym-socks5-client";
+    };
+  };
+in
+{
+  # general opsec toolbelt: recon, malware-pattern mining, vuln scanning, and
+  # mixnet helpers (kept from the old topaz era; prune what you don't use).
+  environment.systemPackages = with pkgs; [
+    whois
+    yara
+    osv-scanner
+    wireguard-tools
+    dnsmasq
+    nym-socks5-client-bin # nym mixnet subsystem (modern client)
+  ];
+}
+
+=== gentuwu/environment/systemPackages.nix ===
+{
+  pkgs,
+  ...
+}:
+{
+  environment.systemPackages = with pkgs; [
+    ocl-icd
+    audit
+    obfs4
+    nftables
+    dropbear
+    macchanger
+    aria2
+    raylib
+    zls
+  ];
+  systemd.tmpfiles.rules = [
+    "L+ /usr/sbin/nft - - - - ${pkgs.nftables}/bin/nft"
+  ];
+}
+
+=== gentuwu/environment/variables.nix ===
+{ config, lib, ... }:
+let
+  vars = config.vars;
+in
+{
+  environment.sessionVariables = {
+    GTK_THEME = vars.gtkTheme;
+    XCURSOR_THEME = vars.cursorTheme;
+    XCURSOR_SIZE = "${toString vars.cursorSize}";
+    EDITOR = "/run/current-system/sw/bin/hx";
+    VISUAL = "hx";
+    TERMINAL = "alacritty";
+    BROWSER = "qutebrowser";
+    CARGO_HOME = [ "/home/yari/.cargo" ];
+    NIXOS_FLAKE = vars.flakeDir;
+    EZA_COLORS = "di=37:fi=90";
+    FZF_DEFAULT_OPTS = "--color='fg:#cdd6f4,bg:#1e1e2e,hl:#cba6f7' --color='fg+:#f5f5f5,bg+:#313244,hl+:#f5c2e7' --color='info:#a6e3a1,prompt:#94e2d5,pointer:#89b4fa' --color='marker:#fab387,spinner:#f9e2af,header:#f38ba8'";
+    LD_LIBRARY_PATH = [ "/run/opengl-driver/lib" ];
+  };
+  environment.variables = lib.mkForce {
+    QT_IM_MODULE = "fcitx";
+    QT_QPA_PLATFORMTHEME = "qt6ct";
+    XMODIFIERS = "@im=fcitx";
+    SDL_IM_MODULE = "fcitx";
+    GLFW_IM_MODULE = "fcitx";
+    XCURSOR_THEME = vars.cursorTheme;
+    XCURSOR_SIZE = "${toString vars.cursorSize}";
+  };
+}
+
+=== gentuwu/environment/wine.nix ===
+{
+  pkgs,
+  ...
+}:
+{
+  environment.systemPackages = with pkgs; [
+    wineWow64Packages.stable
+    winetricks
+    vulkan-loader
+    vulkan-tools
+  ];
+}
+
+=== gentuwu/fonts/default.nix ===
+{ pkgs, ... }: {
+  fonts.packages = with pkgs; [
+    nerd-fonts.symbols-only
+    pragmasevka-nerd-font
+    monocraft
+    noto-fonts
+    noto-fonts-color-emoji
+    noto-fonts-cjk-sans
+    font-awesome
+    material-design-icons
+    nerd-fonts.martian-mono
+    papirus-icon-theme
+    mpvScripts.modernz
+  ];
+  fonts.enableDefaultPackages = true;
+  fonts.fontconfig.defaultFonts = {
+    monospace = [
+      "Monocraft"
+      "Pragmasevka Nerd Font"
+    ];
+    sansSerif = [
+      "Noto Sans"
+      "Noto Sans CJK"
+    ];
+    serif = [
+      "Noto Serif"
+      "Noto Serif CJK"
+    ];
+  };
+}
+
+=== gentuwu/hardware-configuration.nix ===
+# Do not modify this file!  It was generated by ‘nixos-generate-config’
+# and may be overwritten by future invocations.  Please make changes
+# to /etc/nixos/configuration.nix instead.
+{
+  config,
+  lib,
+  pkgs,
+  modulesPath,
+  ...
+}:
+
+{
+  imports = [
+    (modulesPath + "/installer/scan/not-detected.nix")
+  ];
+
+  boot.initrd.availableKernelModules = [
+    "vmd"
+    "xhci_pci"
+    "nvme"
+    "usb_storage"
+    "sd_mod"
+  ];
+  boot.initrd.kernelModules = [ ];
+  boot.kernelModules = [ "kvm-intel" ];
+  boot.extraModulePackages = [ ];
+
+  fileSystems."/" = {
+    device = "/dev/disk/by-label/nixos";
+    fsType = "ext4";
+  };
+
+  fileSystems."/boot" = {
+    device = "/dev/disk/by-label/boot";
+    fsType = "vfat";
+    options = [
+      "fmask=0022"
+      "dmask=0022"
+    ];
+  };
+
+  swapDevices = [
+    { device = "/dev/disk/by-label/swap"; }
+  ];
+
+  nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
+  hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
+}
+
+=== gentuwu/hardware/blueman.nix ===
+{
+  services.blueman.enable = true;
+}
+
+=== gentuwu/hardware/bluetooth.nix ===
+{
+  hardware.bluetooth = {
+    enable = true;
+    # Radio stays DOWN until a device is actually needed: a powered BT radio
+    # broadcasts discoverable beacons (chip MAC, class, name) that pair Wi-Fi
+    # + BT MACs together for tracking. Toggle from the applet when needed.
+    powerOnBoot = false;
+    settings = {
+      General = {
+        Experimental = true;
+        FastConnectable = true;
+      };
+      Policy = {
+        AutoEnable = true;
+      };
+    };
+  };
+}
+
+=== gentuwu/hardware/cpu.nix ===
+_: {
+  hardware.cpu = {
+    amd.updateMicrocode = true;
+    intel.updateMicrocode = true;
+  };
+}
+
+=== gentuwu/hardware/default.nix ===
+{
+  pkgs,
+  ...
+}:
+{
+  hardware.graphics = {
+    enable = true;
+    enable32Bit = true;
+    extraPackages = with pkgs; [ nvidia-vaapi-driver ];
+  };
+}
+
+=== gentuwu/hardware/firmware.nix ===
+_: {
+  hardware.enableRedistributableFirmware = true;
+}
+
+=== gentuwu/hardware/gvfs.nix ===
+{
+  services.gvfs.enable = true;
+}
+
+=== gentuwu/hardware/nbfc.nix ===
+{
+  pkgs,
+  config,
+  lib,
+  ...
+}:
+let
+  h = import ../../lib/helpers.nix { inherit lib; };
+  nbfcCfg = config.services.nbfc;
+  nbfcWrapperConfig = pkgs.writeText "nbfc.json" (
+    builtins.toJSON {
+      SelectedConfigId = nbfcCfg.modelName;
+      EmbeddedControllerType = nbfcCfg.ecBackend;
+      # Start in manual mode at a fixed speed so the daemon never auto-ramps.
+      # 0 = off, -1 = auto. Values: [ CPU GPU CoolBoost ].
+      TargetFanSpeeds = [ nbfcCfg.manualSpeed nbfcCfg.manualSpeed 0 ];
+    }
+  );
+in
+{
+  options.services.nbfc = {
+    enable = lib.mkEnableOption "NBFC fan control service";
+    package = lib.mkPackageOption pkgs "nbfc-linux" { };
+    modelName = h.mkStrOpt "" "Notebook model name";
+    modelConfig = h.mkPathOpt "" "Path to the notebook model JSON config file";
+    ecBackend = h.mkStrOpt "dev_port" "Embedded controller backend";
+    manualSpeed = h.mkIntOpt 0 "Fixed manual fan speed (0-100) applied at boot";
+  };
+
+  config = lib.mkMerge [
+    {
+      services.nbfc = {
+        enable = true;
+        modelName = "Cyborg 15 A12UDX";
+        modelConfig = ../../dotfiles/nbfc/cyborg-15-a12udx.json;
+      };
+    }
+    (lib.mkIf nbfcCfg.enable {
+      environment.systemPackages = [
+        (pkgs.writeShellScriptBin "fan-control" ''
+          # fan-control <auto|boost|up|down> — authoritative fan commands
+          # Manual speed is persisted in ~/.local/state/fanspeed so fanup/fandown
+          # operate relative to the last applied manual speed.
+          state="$HOME/.local/state/fanspeed"
+          notify() { notify-send -t 2500 "Fan control" "$1" 2>/dev/null; }
+          cur=0
+          [ -f "$state" ] && cur="$(cat "$state")"
+          clamp() { if [ "$1" -lt 0 ]; then echo 0; elif [ "$1" -gt 100 ]; then echo 100; else echo "$1"; fi; }
+          case "$1" in
+            auto)    nbfc set -a && notify "Fan control: auto (profile)" ;;
+            boost)   nbfc set -s 100 && { echo 100 > "$state"; notify "Fan boost: 100%"; } ;;
+            up)      next=$(clamp "$((cur + 20))"); nbfc set -s "$next" && { echo "$next" > "$state"; notify "Fans increased to $next%"; } ;;
+            down)    next=$(clamp "$((cur - 20))"); nbfc set -s "$next" && { echo "$next" > "$state"; notify "Fans decreased to $next%"; } ;;
+            *)       echo "usage: fan-control <auto|boost|up|down>" >&2; exit 1 ;;
+          esac
+        '')
+        (pkgs.writeShellScriptBin "fanauto" "exec fan-control auto")
+        (pkgs.writeShellScriptBin "fanboost" "exec fan-control boost")
+        (pkgs.writeShellScriptBin "fanup" "exec fan-control up")
+        (pkgs.writeShellScriptBin "fandown" "exec fan-control down")
+        nbfcCfg.package
+      ];
+      systemd.tmpfiles.rules = [
+        "d /var/lib/nbfc 0755 root root -"
+      ];
+      systemd.services.nbfc = {
+        description = "NoteBook FanControl";
+        after = [ "sysinit.target" ];
+        wantedBy = [ "multi-user.target" ];
+        wants = [ "systemd-tmpfiles-setup.service" ];
+        serviceConfig = {
+          Type = "simple";
+          ExecStart = "${nbfcCfg.package}/bin/nbfc_service -c ${nbfcWrapperConfig} -e ${nbfcCfg.ecBackend}";
+          Restart = "on-failure";
+          RestartSec = "5s";
+        };
+      };
+      boot.kernelModules = [ "ec_sys" ];
+    })
+  ];
+}
+
+=== gentuwu/hardware/nvidia.nix ===
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
+{
+  hardware.nvidia = {
+    modesetting.enable = true;
+    powerManagement.enable = false;
+    open = false;
+    nvidiaSettings = false;
+    package = config.boot.kernelPackages.nvidiaPackages.stable;
+    prime = {
+      offload.enable = true;
+      intelBusId = "PCI:0:2:0";
+      nvidiaBusId = "PCI:1:0:0";
+    };
+  };
+  services.xserver.videoDrivers = [ "nvidia" ];
+}
+
+=== gentuwu/hardware/opentabletdriver.nix ===
+_: {
+  hardware.opentabletdriver.enable = true;
+}
+
+=== gentuwu/hardware/power.nix ===
+{
+  config,
+  lib,
+  ...
+}:
+let
+  inherit (lib)
+    types
+    mkOption
+    mkIf
+    ;
+  cfg = config.gentuwu.powerProfiles;
+in
+{
+  options.gentuwu.powerProfiles.default = mkOption {
+    type = types.nullOr (
+      types.enum [
+        "performance"
+        "balanced"
+        "power-saver"
+      ]
+    );
+    default = "balanced";
+  };
+
+  config = mkIf (cfg.default != null) {
+    powerManagement.enable = true;
+    powerManagement.cpuFreqGovernor =
+      if cfg.default == "performance" then "performance" else "powersave";
+    services.power-profiles-daemon.enable = true;
+    services.upower.enable = true;
+  };
+}
+
+=== gentuwu/hardware/steam-hardware.nix ===
+_: {
+  hardware.steam-hardware.enable = true;
+}
+
+=== gentuwu/i18n/input-method.nix ===
+{ pkgs, ... }: {
+  i18n.inputMethod = {
+    enable = true;
+    type = "fcitx5";
+    fcitx5.addons = with pkgs; [
+      fcitx5-mozc
+      fcitx5-gtk
+      qt6Packages.fcitx5-configtool
+    ];
+  };
+}
+
+=== gentuwu/i18n/locales.nix ===
+_: {
+  i18n.defaultLocale = "en_GB.UTF-8";
+  i18n.extraLocaleSettings = {
+    LC_ADDRESS = "en_GB.UTF-8";
+    LC_IDENTIFICATION = "en_GB.UTF-8";
+    LC_MEASUREMENT = "en_GB.UTF-8";
+    LC_MONETARY = "en_GB.UTF-8";
+    LC_NAME = "en_GB.UTF-8";
+    LC_NUMERIC = "en_GB.UTF-8";
+    LC_PAPER = "en_GB.UTF-8";
+    LC_TELEPHONE = "en_GB.UTF-8";
+    LC_TIME = "en_GB.UTF-8";
+  };
+}
+
+=== gentuwu/i18n/xkb.nix ===
+_: {
+  services.xserver.xkb = {
+    layout = "gb";
+    variant = "";
+  };
+}
+
+=== gentuwu/networking/dns-mode.nix ===
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
+let
+  inherit (lib) mkForce;
+in
+{
+  # ─── dns-mode: AdGuardHome | validating chain | plain | tor ─────────────
+  # Every daemon binds its own loopback port so the stacks can coexist; the
+  # active mode just decides which endpoint systemd-resolved points at.
+  #
+  #   127.0.0.1:53    AdGuardHome frontend (DoH upstreams)      [filtered]
+  #   127.0.0.1:5353  dnsmasq (stateless, cache-size=0)          [validated/plain/tor]
+  #   127.0.0.1:5354  unbound (DNSSEC validator)                 [validated]
+  #   127.0.0.1:5355  dnscrypt-proxy (encrypted upstream)        [validated]
+  #   127.0.0.1:5356  tor DNSPort (anonymized)                   [tor]
+  #
+  # Boot default = filtered (AdGuardHome owns :53, same as before). Switching
+  # is done by `dns-mode <filtered|validated|plain|tor>`.
+
+  # ─── filtered mode: frontend managed by services/adguardhome (DoH) ──────
+  # AdGuardHome owns 127.0.0.1:53 (see services/adguardhome.nix). The other
+  # stacks bind their own ports below so all modes coexist until switched.
+
+  # ─── validated / plain / tor frontend: dnsmasq ─────────────────────────
+  # Stateless forwarding resolver (`cache-size=0 no-negcache`).
+  # Upstreams are injected at runtime via /run/dnsmode/servers so one binary
+  # serves all three chain modes; `systemctl reload dnsmasq` re-reads it.
+  services.dnsmasq = {
+    enable = true;
+    resolveLocalQueries = false;
+    settings = {
+      port = 5353;
+      bind-interfaces = true;
+      listen-address = [ "127.0.0.1" ];
+      no-resolv = true;
+      no-hosts = true;
+      cache-size = 0;
+      no-negcache = true;
+      local-service = true;
+      servers-file = "/run/dnsmode/servers";
+    };
+  };
+
+  systemd.services.dnsmasq = {
+    wantedBy = mkForce [ ];
+    preStart = ''
+      mkdir -p /run/dnsmode
+    '';
+  };
+
+  systemd.tmpfiles.rules = [ "d /run/dnsmode 0755 root root -" ];
+
+  # ─── DNSSEC validator: unbound (forwards to dnscrypt-proxy) ──────────────
+  # `module-config` is intentionally NOT set: it defaults to "validator iterator"
+  # (the whole point of this hop), and the NixOS settings renderer writes the
+  # string unquoted, which 1.26.0's parser rejects (`unknown keyword 'iterator'`).
+  services.unbound = {
+    enable = true;
+    settings = {
+      server = {
+        interface = [ "127.0.0.1" ];
+        port = 5354;
+        do-not-query-localhost = false;
+        access-control = [ "127.0.0.0/8 allow" ];
+        hide-identity = true;
+        hide-version = true;
+      };
+      forward-zone = [
+        {
+          name = ".";
+          forward-addr = [ "127.0.0.1@5355" ];
+        }
+      ];
+    };
+  };
+
+  systemd.services.unbound = {
+    wantedBy = mkForce [ ];
+  };
+
+  # ─── Encrypted upstream: dnscrypt-proxy ───────────────────────────────────
+  # Listens on 127.0.0.1:5355; upstreams come from the public-resolvers list.
+  services.dnscrypt-proxy = {
+    enable = true;
+    settings = {
+      listen_addresses = [ "127.0.0.1:5355" ];
+      server_names = [
+        "cloudflare"
+        "quad9-dnscrypt-ip4-nofilter-pri"
+      ];
+      require_dnssec = true;
+      cache = false;
+      log_level = 0;
+      sources.public-resolvers = {
+        urls = [ "https://download.dnscrypt.info/resolvers-list/v2/public-resolvers.md" ];
+        cache_file = "/var/cache/dnscrypt-proxy/public-resolvers.md";
+        minisign_key = "RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3";
+      };
+      netprobe_timeout = 60;
+      fallback_resolvers = [ "1.1.1.1:53" ];
+    };
+  };
+
+  systemd.services.dnscrypt-proxy = {
+    wantedBy = mkForce [ ];
+    after = [ "network-online.target" ];
+  };
+
+  # ─── tor mode: DNSPort ─────────────────────────────────────────────────
+  # tor DNSPort answers on 127.0.0.1:5356; dnsmasq forwards there. tor stays
+  # stopped at boot (arti holds host SOCKS); `dns-mode tor` starts it.
+  services.tor.settings.DNSPort = {
+    addr = "127.0.0.1";
+    port = 5356;
+  };
+
+  # ─── dns-mode control script (root) ──────────────────────────────────────
+  # The fish wrapper `dns-mode` calls this via doas. It rewrites the dnsmasq
+  # upstream file, toggles the right daemons, and repoints systemd-resolved
+  # at the active frontend (resolved accepts `IP#port`).
+  environment.systemPackages = [
+    (pkgs.writeShellScriptBin "dns-mode-ctl" ''
+      #!/bin/sh
+      mode="$1"
+      state=/run/dnsmode/servers
+      mkdir -p /run/dnsmode
+
+      write_upstream() {
+        : > "$state"
+        for s in "$@"; do echo "server=$s" >> "$state"; done
+        chmod 644 "$state"
+      }
+
+      # systemd-resolved: set DNS for every real link to the active frontend,
+      # with plain public resolvers as a trailing fallback so resolved can
+      # step past a dead local frontend per query.
+      fallback_resolvers="1.1.1.1 1.0.0.1"
+      linkdns() {
+        for iface in $(resolvectl 2>/dev/null | sed -n 's/^Link [0-9]* (\([^)]*\)):*$/\1/p'); do
+          case "$iface" in lo|docker*) continue;; esac
+          resolvectl dns "$iface" "$@" $fallback_resolvers 2>/dev/null
+        done
+      }
+
+      case "$mode" in
+        filtered)
+          systemctl stop dnsmasq unbound dnscrypt-proxy tor 2>/dev/null
+          systemctl restart adguardhome 2>/dev/null
+          systemctl restart arti 2>/dev/null
+          linkdns 127.0.0.1
+          echo filtered > /run/dnsmode/mode
+          ;;
+        validated)
+          systemctl stop tor 2>/dev/null
+          systemctl restart arti 2>/dev/null
+          systemctl start dnscrypt-proxy unbound 2>/dev/null
+          write_upstream "127.0.0.1#5354"
+          systemctl restart dnsmasq
+          linkdns "127.0.0.1#5353"
+          echo validated > /run/dnsmode/mode
+          ;;
+        plain)
+          systemctl stop unbound dnscrypt-proxy tor 2>/dev/null
+          systemctl restart arti 2>/dev/null
+          write_upstream "1.1.1.1" "9.9.9.9"
+          systemctl restart dnsmasq
+          linkdns "127.0.0.1#5353"
+          echo plain > /run/dnsmode/mode
+          ;;
+        tor)
+          systemctl stop unbound dnscrypt-proxy 2>/dev/null
+          systemctl stop arti 2>/dev/null
+          systemctl start tor 2>/dev/null
+          write_upstream "127.0.0.1#5356"
+          systemctl restart dnsmasq
+          linkdns "127.0.0.1#5353"
+          echo tor > /run/dnsmode/mode
+          ;;
+        status)
+          echo "── DNS mode status ──"
+          echo "linkdns:"
+          resolvectl 2>/dev/null | sed -n 's/^Link [0-9]* (\([^)]*\)):*$/\1/p' | while read -r f; do
+            echo "  $f: $(resolvectl dns "$f" 2>/dev/null | head -1)"
+          done
+          echo "upstreams: $(cat "$state" 2>/dev/null || echo '(none)')"
+          echo "daemons:"
+          for s in adguardhome dnsmasq unbound dnscrypt-proxy tor arti; do
+            printf "  %-16s %s\n" "$s" "$(systemctl is-active "$s" 2>/dev/null)"
+          done
+          ;;
+        *)
+          echo "usage: dns-mode <filtered|validated|plain|tor|status>" >&2
+          exit 1
+          ;;
+      esac
+    '')
+  ];
+}
+
+=== gentuwu/networking/firewall.nix ===
+{ pkgs, ... }: {
+  networking.firewall = {
+    enable = true;
+    logRefusedConnections = false;
+    allowPing = false;
+    checkReversePath = "loose";
+  };
+
+  # DNS egress guard: only the loopback chain (dnsmasq/unbound/AdGuardHome on
+  # 127.0.0.1) and the trusted resolver IPs below may leave on port 53. This
+  # kills the classic malware exfil/DNS-tunneling channel: a compromised app
+  # can't phone home over plaintext DNS, and DoH/DoT (:443/:853) to the same
+  # resolvers is untouched. `plain` mode + resolved's fallbacks stay working
+  # (1.1.1.1/9.9.9.9), dnscrypt upstreams (cloudflare/quad9) use :443.
+  #
+  # Loaded via our own oneshot, NOT networking.nftables: that module
+  # blacklists the ip_tables kernel module, which Docker needs (docker NAT).
+  systemd.services.dnsguard = {
+    description = "DNS egress guard (nftables table)";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "systemd-modules-load.service" ];
+    before = [ "network.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    script = ''
+      ${pkgs.nftables}/bin/nft delete table inet dnsguard 2>/dev/null || true
+      ${pkgs.nftables}/bin/nft -f ${pkgs.writeText "dnsguard.nft" ''
+        table inet dnsguard {
+          set allowed_resolvers_ip4 {
+            type ipv4_addr
+            elements = { 1.1.1.1, 1.0.0.1, 9.9.9.9, 9.9.9.10 }
+          }
+
+          chain output {
+            type filter hook output priority 0; policy accept;
+            oifname "lo" accept
+            meta l4proto udp th dport 53 ip daddr @allowed_resolvers_ip4 accept
+            meta l4proto tcp th dport 53 ip daddr @allowed_resolvers_ip4 accept
+            meta l4proto udp th dport 53 counter drop
+            meta l4proto tcp th dport 53 counter drop
+            meta l4proto icmp th dport 53 counter drop
+          }
+        }
+      ''}
+    '';
+  };
+}
+
+=== gentuwu/networking/hostname.nix ===
+_: {
+  networking.hostName = "gentuwu";
+}
+
+=== gentuwu/networking/nettuning.nix ===
+_: {
+  boot = {
+    kernelModules = [
+      "tcp_bbr"
+      "sch_cake"
+    ];
+    extraModprobeConfig = ''
+      options iwlwifi power_save=0 uapsd_disable=1
+      options iwlmvm power_scheme=1
+    '';
+    kernel.sysctl = {
+      "net.ipv4.tcp_congestion_control" = "bbr";
+      "net.core.default_qdisc" = "cake";
+      "net.ipv4.tcp_rmem" = "4096 87380 33554432";
+      "net.ipv4.tcp_wmem" = "4096 65536 33554432";
+      "net.ipv4.tcp_slow_start_after_idle" = "0";
+      "net.ipv4.tcp_notsent_lowat" = "131072";
+      "net.ipv4.tcp_fastopen" = "3";
+      "net.ipv4.tcp_mtu_probing" = "1";
+      "net.core.rmem_max" = 134217728;
+      "net.core.wmem_max" = 134217728;
+      "net.ipv4.udp_rmem_min" = "16384";
+      "net.ipv4.udp_wmem_min" = "16384";
+      "net.core.busy_read" = "50";
+      "net.core.busy_poll" = "50";
+    };
+  };
+}
+
+=== gentuwu/networking/netvms.nix ===
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
+let
+  inherit (lib) mapAttrsToList mkMerge;
+  ip = "${pkgs.iproute2}/bin/ip";
+  nft = "${pkgs.nftables}/bin/nft";
+
+  # ---------------------------------------------------------------------------
+  # netVM: Qubes-style network domains at namespace level.
+  #
+  # Each domain is a tiny veth "qube network" the firejail profiles join:
+  #
+  #    10.254.<idx>.1  host end of the veth (runs the adguard DNS frontend)
+  #    10.254.<idx>.2  sandbox end (firejail `netns <name>`)
+  #
+  # A per-domain nft table does the NAT (postrouting masquerade) and, more
+  # importantly, enforces the domain's FORWARD policy so "internet" and "LAN"
+  # are privileges, not defaults. The DENYLIST side is handled by the dnsguard
+  # firewall; this is the per-app network compartment half.
+  #
+  # Add a domain here, then a firejail profile with `netns <newname>`,
+  # `dns 10.254.<idx>.1` and you have a new isolated network.
+  # ---------------------------------------------------------------------------
+
+  mkDomain = name: idx: {
+    host = "10.254.${toString idx}.1";
+    sandbox = "10.254.${toString idx}.2";
+    hostIface = "nvmh-${name}";
+  };
+
+  domains = {
+    # general internet, ALL LAN/private ranges blocked
+    browsernet = mkDomain "browsernet" 0;
+    # LAN + LAN/mDNS only, no internet at all
+    homenet = mkDomain "homenet" 1;
+  };
+
+  # nft forward chain for one domain. Always allow established/related replies
+  # back in, allow DNS to the domain's own adguard endpoint, block cross-domain
+  # traffic, then apply the domain's internet/LAN take.
+  forwardChain =
+    name:
+    let
+      d = domains.${name};
+    in
+    ''
+      chain forward {
+        type filter hook forward priority 0; policy ${if name == "homenet" then "drop" else "accept"};
+        ct state established,related accept
+        ip saddr ${d.sandbox}/32 ip daddr ${d.host} udp dport 53 accept
+        ip saddr ${d.sandbox}/32 ip daddr ${d.host} tcp dport 53 accept
+        # never let one domain talk to another
+        ip saddr ${d.sandbox}/32 ip daddr 10.254.0.0/16 drop
+        ${
+          if name == "homenet" then
+            ''
+              # homenet: LAN, mDNS/SSDP/UPnP — nothing else
+              ip saddr ${d.sandbox}/32 ip daddr { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 } accept
+              ip saddr ${d.sandbox}/32 ip daddr 224.0.0.0/4 accept
+            ''
+          else
+            ''
+              # browsernet: everything else is fine, these are not
+              ip saddr ${d.sandbox}/32 ip daddr { 100.64.0.0/10, 172.16.0.0/12, 192.168.0.0/16 } drop
+              ip saddr ${d.sandbox}/32 ip daddr 10.0.0.0/8 drop
+              ip saddr ${d.sandbox}/32 ip daddr 169.254.0.0/16 drop
+              ip saddr ${d.sandbox}/32 ip daddr 224.0.0.0/4 udp dport 5353 drop
+            ''
+        }
+      }
+    '';
+in
+{
+  boot.kernel.sysctl."net.ipv4.ip_forward" = 1;
+
+  systemd.services = mkMerge (
+    mapAttrsToList (name: d: {
+      "netvm-${name}" = {
+        description = "netVM domain '${name}' (veth + NAT + forward policy)";
+        wantedBy = [ "multi-user.target" ];
+        after = [ "systemd-modules-load.service" ];
+        # CRITICAL: the script body interpolates absolute /nix/store paths for
+        # ip/nft, but systemd only auto-adds store paths found in ExecStart.
+        # Without `path` those binaries are absent from the unit's runtime
+        # closure → "exec of 'ip' failed: No such file or directory".
+        path = [
+          pkgs.iproute2
+          pkgs.nftables
+        ];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+        };
+        script = ''
+          ${ip} netns del ${name} 2>/dev/null || true
+          ${ip} link del ${d.hostIface} 2>/dev/null || true
+          ${nft} delete table inet netvm-${name} 2>/dev/null || true
+
+          ${ip} netns add ${name}
+          ${ip} link add ${d.hostIface} type veth peer name nvms-${name}
+          ${ip} link set nvms-${name} netns ${name}
+
+          ${ip} link set ${d.hostIface} up
+          ${ip} addr add ${d.host}/30 dev ${d.hostIface}
+          ${ip} netns exec ${name} ip link set lo up
+          ${ip} netns exec ${name} ip link set nvms-${name} up
+          ${ip} netns exec ${name} ip addr add ${d.sandbox}/30 dev nvms-${name}
+          ${ip} netns exec ${name} ip route add default via ${d.host}
+
+          ${nft} -f ${pkgs.writeText "netvm-${name}.nft" ''
+            table inet netvm-${name} {
+              chain prerouting {
+                type nat hook prerouting priority dstnat; policy accept;
+              }
+              chain postrouting {
+                type nat hook postrouting priority srcnat; policy accept;
+              }
+              ${forwardChain name}
+            }
+          ''}
+
+          # masquerade, NOT an explicit `snat to <addr>`.
+          #
+          # An earlier revision avoided masquerade believing nf_nat_masquerade
+          # was missing. It is not: CONFIG_NF_NAT_MASQUERADE is built into this
+          # kernel and the nft_masq module is loaded, so masquerade works.
+          #
+          # masquerade resolves the egress address at packet time instead of at
+          # rule-insert time, which is what fixes the startup failure:
+          #   Error: Could not process rule: No such file or directory
+          #   add rule inet netvm-* postrouting ip saddr ... snat to 192.168.1.121
+          # `snat to` makes nftables resolve an address/interface while the
+          # veth is still being brought up, and it has nothing to resolve
+          # against yet. It also broke on every DHCP lease change.
+          ${nft} add rule inet netvm-${name} postrouting \
+            ip saddr ${d.sandbox}/32 masquerade
+        '';
+      };
+    }) domains
+  );
+}
+
+=== gentuwu/networking/networkmanager.nix ===
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
+let
+  inherit (lib) mkForce;
+
+  # ─── wifi-harden: retrofit saved NM profiles ────────────────────────────────
+  # The module-level wifi.macAddress only sets the default for *new* profiles.
+  # This walks every saved connection and pins:
+  #   wifi  : cloned-mac-address = stable-ssid (per-SSID stable random MAC)
+  #           + 802-11-wireless-security.pmf = 2 (optional 802.11w PMF) or,
+  #           with `wifi-harden strict`, 3 = require PMF and refuse to join
+  #           networks without it.
+  #   ether : cloned-mac-address = random
+  # Idempotent, so running it on every boot only touches profiles that are out
+  # of spec (a profile active at the moment of change gets one re-association
+  # as its MAC rolls over; that's the one-time migration cost).
+  wifiHarden = pkgs.writeShellScriptBin "wifi-harden" ''
+    #!/bin/sh
+    set -u
+    mode="''${1:-}"
+    for conn in $(nmcli -g UUID,TYPE connection show | sed -n 's/^\([^:]*\):802-11-wireless$/\1/p'); do
+      [ "$(nmcli -g wifi.cloned-mac-address connection show "$conn")" = stable-ssid ] || \
+        nmcli connection modify "$conn" wifi.cloned-mac-address stable-ssid
+      case "$mode" in
+        strict) nmcli connection modify "$conn" 802-11-wireless-security.pmf 3 ;;
+        *)
+          if nmcli -g 802-11-wireless-security.key-mgmt connection show "$conn" | grep -q .; then
+            nmcli connection modify "$conn" 802-11-wireless-security.pmf 2
+          fi
+          ;;
+      esac
+    done
+    for conn in $(nmcli -g UUID,TYPE connection show | sed -n 's/^\([^:]*\):802-3-ethernet$/\1/p'); do
+      [ "$(nmcli -g ethernet.cloned-mac-address connection show "$conn")" = random ] || \
+        nmcli connection modify "$conn" ethernet.cloned-mac-address random
+    done
+  '';
+in
+{
+  boot.kernelModules = [
+    "dummy"
+    "wireguard"
+    "nft_fib_ipv4"
+    "nft_fib_ipv6"
+    "nft_ct"
+  ];
+  networking = {
+    enableIPv6 = false;
+    networkmanager = {
+      enable = true;
+      dns = mkForce "none";
+      wifi = {
+        # stable-ssid: one stable random MAC per SSID (per-SSID identity across
+        # reconnects, distinct MAC per different network). `random` (new MAC
+        # every connect) is stronger but breaks portals/DHCP reservations and
+        # makes association look like a fresh guest each time. Scans already
+        # randomize (scanRandMacAddress defaults true), so probe requests don't
+        # leak your identity while unconnected.
+        powersave = false;
+        backend = "iwd";
+        macAddress = "stable-ssid";
+      };
+      ethernet.macAddress = "random";
+      # nvmh-* are the host ends of the netVM domain veths, router endpoints
+      # (see networking/netvms.nix) — never real links. The quarantine
+      # container's ve-*/vb-* are already unmanaged via its own udev rule.
+      unmanaged = [ "interface-name:nvmh-*" ];
+    };
+    wireless.iwd = {
+      enable = true;
+      settings = {
+        Settings.AutoConnect = true;
+        Network.EnableIPv6 = false;
+      };
+    };
+    nameservers = [
+      "127.0.0.1"
+      "1.1.1.1"
+      "1.0.0.1"
+      "9.9.9.9"
+    ];
+  };
+
+  environment.systemPackages = [ wifiHarden ];
+
+  systemd.services.wifi-harden = {
+    description = "Apply stable-ssid MAC + 802.11w PMF to saved NetworkManager profiles";
+    after = [ "networkmanager.service" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    script = ''
+      ${wifiHarden}/bin/wifi-harden
+    '';
+  };
+}
+
+=== gentuwu/networking/resolved.nix ===
+_: {
+  services.resolved = {
+    enable = true;
+    settings.Resolve = {
+      # allow-downgrade instead of strict DNSSEC: the adguard frontend proxies
+      # DoH upstreams but does not terminate DNSSEC, so `DNSSEC=true` turns
+      # unvalidatable answers into SERVFAIL for everything. Validation still
+      # happens when possible; it degrades instead of bricking all lookups.
+      DNSSEC = "allow-downgrade";
+      LLMNR = "false";
+      MulticastDNS = "false";
+      FallbackDNS = "1.1.1.1 1.0.0.1";
+      # Real resolvers as a trailing fallback for the per-link chain, so a
+      # dead local frontend (REFUSED/SERVFAIL per query) never takes the
+      # whole connection down.
+    };
+  };
+}
+
+=== gentuwu/networking/route-mode.nix ===
+{ config, pkgs, lib, ... }:
+{
+  services.dnsmasq = {
+    enable = true;
+    settings = {
+      port = 5353;
+      cache-size = 0;
+      no-resolv = true;
+      no-poll = true;
+      bind-interfaces = true;
+      listen-address = "127.0.0.1";
+      domain-needed = false;
+      bogus-priv = false;
+      strict-order = true;
+    };
+  };
+
+  services.unbound = {
+    enable = true;
+    settings = {
+      server = {
+        interface = [ "127.0.0.1" ];
+        port = 5354;
+        do-tcp = true;
+        do-udp = true;
+        hide-identity = true;
+        hide-version = true;
+        qname-minimisation = true;
+        minimal-responses = true;
+        prefetch = true;
+        use-caps-for-id = true;
+        harden-glue = true;
+        harden-dnssec-stripped = true;
+        harden-below-nxdomain = true;
+        harden-referral-path = true;
+        harden-algo-downgrade = true;
+        harden-large-queries = true;
+        val-permissive-mode = false;
+        val-clean-additional = true;
+        do-not-query-localhost = false;
+      };
+      forward-zone = [
+        {
+          name = ".";
+          forward-addr = "127.0.0.1@5355";
+        }
+      ];
+    };
+  };
+
+  services.dnscrypt-proxy = {
+    enable = true;
+    settings = {
+      listen_addresses = ["127.0.0.1:5355"];
+      server_names = ["quad9-dnscrypt-ip4-filter-pri"];
+      ipv4_servers = true;
+      ipv6_servers = false;
+      dnscrypt_servers = true;
+      doh_servers = false;
+      odoh_servers = false;
+      require_dnssec = true;
+      require_nolog = true;
+      require_nofilter = false;
+      force_tcp = false;
+      timeout = 2500;
+      keepalive = 30;
+      lb_strategy = "p2";
+      lb_estimator = true;
+      cache = false;
+      cache_size = 4096;
+      cache_min_ttl = 2400;
+      cache_max_ttl = 86400;
+      blocked_names.blocked_names_file = "blocked-names.txt";
+      blocked_ips.blocked_ips_file = "blocked-ips.txt";
+      allowed_names.allowed_names_file = "allowed-names.txt";
+      allowed_ips.allowed_ips_file = "allowed-ips.txt";
+      sources.public-resolvers = {
+        urls = ["https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/public-resolvers.md"];
+        cache_file = "/var/cache/dnscrypt-proxy/public-resolvers.md";
+        minisign_key = "RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3";
+        refresh_delay = 72;
+      };
+    };
+  };
+
+  systemd.services.unbound = {
+    after = [ "dnscrypt-proxy.service" ];
+    requires = [ "dnscrypt-proxy.service" ];
+  };
+
+  systemd.services.dnscrypt-proxy = {
+    after = [ "network.target" ];
+  };
+
+  environment.systemPackages = [
+    (pkgs.writeShellScriptBin "route" ''
+      #!/bin/sh
+      mode="''${1:?usage: route <plain|secure|tor|status>}"
+      state=/run/routemode/servers
+      modefile=/run/routemode/mode
+      NFT=${pkgs.nftables}/bin/nft
+      SET="inet dnsguard allowed_resolvers_ip4"
+      mkdir -p /run/routemode
+
+      write_upstream() {
+        : > "$state"
+        for s in "$@"; do echo "server=$s" >> "$state"; done
+        chmod 644 "$state"
+      }
+
+      fw_close() {
+        $NFT flush set $SET 2>/dev/null || true
+      }
+      fw_allow_plain() {
+        fw_close
+        $NFT add element $SET '{ 1.1.1.1, 1.0.0.1, 9.9.9.9, 9.9.9.10 }' 2>/dev/null || true
+      }
+      fw_allow_bootstrap() {
+        fw_close
+        $NFT add element $SET '{ 1.1.1.1 timeout 5m }' 2>/dev/null || true
+      }
+
+      ensure_dnsguard() {
+        $NFT list table inet dnsguard >/dev/null 2>&1 || true
+      }
+
+      begin() {
+        ensure_dnsguard
+        fw_close
+      }
+
+      need_active() {
+        sleep 1
+        if ! systemctl is-active --quiet "$1"; then
+          echo "route: $1 failed to start" >&2
+          fw_close
+          echo "failed ($mode)" > "$modefile"
+          exit 1
+        fi
+      }
+
+      case "$mode" in
+        plain)
+          begin
+          systemctl stop tor-hardening tor 2>/dev/null || true
+          write_upstream "1.1.1.1" "9.9.9.9"
+          systemctl restart dnsmasq
+          need_active dnsmasq
+          systemctl stop unbound dnscrypt-proxy 2>/dev/null || true
+          systemctl start adguardhome 2>/dev/null || true
+          fw_allow_plain
+          echo plain > "$modefile"
+          echo "route: plain"
+          ;;
+        secure)
+          begin
+          systemctl stop tor-hardening tor 2>/dev/null || true
+          write_upstream "127.0.0.1#5354"
+          systemctl restart dnsmasq
+          need_active dnsmasq
+          systemctl start adguardhome 2>/dev/null || true
+          fw_allow_bootstrap
+          systemctl start unbound 2>/dev/null || true
+          systemctl restart dnscrypt-proxy 2>/dev/null || true
+          need_active dnscrypt-proxy
+          need_active unbound
+          echo secure > "$modefile"
+          echo "route: secure"
+          ;;
+        tor)
+          begin
+          write_upstream "127.0.0.1#5356"
+          systemctl restart dnsmasq
+          need_active dnsmasq
+          systemctl stop unbound dnscrypt-proxy 2>/dev/null || true
+          systemctl start adguardhome 2>/dev/null || true
+          systemctl start tor 2>/dev/null || true
+          need_active tor
+          systemctl start tor-hardening 2>/dev/null || true
+          need_active tor-hardening
+          echo tor > "$modefile"
+          echo "route: tor (all TCP via Tor)"
+          ;;
+        status)
+          echo "route: $(cat "$modefile" 2>/dev/null || echo unknown)"
+          echo "upstreams: $(cat "$state" 2>/dev/null | tr '\n' ' ')"
+          echo "nft: $($NFT list set $SET 2>/dev/null | grep -o '{[^}]*}' | head -1)"
+          for s in adguardhome dnsmasq unbound dnscrypt-proxy tor tor-hardening; do
+            printf "  %-16s %s\n" "$s" "$(systemctl is-active "$s" 2>/dev/null)"
+          done
+          ;;
+        *)
+          echo "usage: route <plain|secure|tor|status>" >&2
+          exit 1
+          ;;
+      esac
+    '')
+  ];
+
+  systemd.services.routemode-boot = {
+    description = "Apply tor routing at boot";
+    after = [ "network-online.target" "dnsmasq.service" ];
+    wants = [ "network-online.target" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig.Type = "oneshot";
+    script = ''
+      /run/current-system/sw/bin/route tor || true
+    '';
+  };
+}
+
+=== gentuwu/nix/gc.nix ===
+_: {
+  nix.gc = {
+    automatic = true;
+    dates = "weekly";
+    options = "--delete-older-than 30d";
+  };
+}
+
+=== gentuwu/nix/optimise.nix ===
+_: {
+  nix.optimise.automatic = true;
+}
+
+=== gentuwu/nix/overlays.nix ===
+_: {
+  nixpkgs.overlays = [
+    (
+      final: prev:
+      let
+        beaker-src = builtins.fetchGit {
+          url = "https://git.bwaaa.monster/beaker";
+          rev = "3fab89ecf8f4c664477a82add660d28db87357b4";
+        };
+      in
+      {
+        beaker = prev.stdenv.mkDerivation {
+          pname = "beaker";
+          version = "git";
+          src = beaker-src;
+          makeFlags = [
+            "INSTALL_PREFIX=$(out)/"
+            "LDCONFIG=true"
+          ];
+        };
+      }
+    )
+    (final: prev: {
+      pragmasevka-nerd-font = prev.stdenvNoCC.mkDerivation {
+        pname = "pragmasevka-nerd-font";
+        version = "1.7.0";
+        src = prev.fetchurl {
+          url = "https://github.com/shytikov/pragmasevka/releases/download/v1.7.0/Pragmasevka_NF.zip";
+          hash = "sha256-7qt1jv9WLRyu12EkRIjlZUW+Jegaa0DNhLMbAyo3YVw=";
+        };
+        nativeBuildInputs = [ prev.unzip ];
+        unpackPhase = "unzip $src -d pragmasevka";
+        installPhase = ''
+          mkdir -p $out/share/fonts/truetype
+          cp pragmasevka/*.ttf $out/share/fonts/truetype/
+        '';
+        meta.description = "Pragmasevka Nerd Font (PragmataPro doppelgänger from Iosevka)";
+      };
+    })
+    (
+      final: prev:
+      let
+        patched-catppuccin = prev.python313.pkgs.catppuccin.overrideAttrs (old: {
+          doCheck = false;
+          pytestCheckPhase = "true";
+          pythonImportsCheckPhase = "true";
+        });
+        custom-python3 = prev.python313.withPackages (ps: [ patched-catppuccin ]);
+      in
+      {
+        python3Packages = prev.python3Packages // {
+          catppuccin = patched-catppuccin;
+        };
+        catppuccin-gtk = prev.catppuccin-gtk.overrideAttrs (old: {
+          nativeBuildInputs = [
+            prev.gtk3
+            prev.sassc
+            prev.git
+            custom-python3
+          ];
+        });
+      }
+    )
+    (
+      final: prev:
+      let
+        warpSrc = final.fetchurl {
+          url = "https://pkg.cloudflareclient.com/pool/noble/main/c/cloudflare-warp/cloudflare-warp_2026.6.822.0_amd64.deb";
+          hash = "sha256-xl9r4/UBGwMLkhtBwTs4ZDlamgwdXm3Oyr3J3O6uYV0=";
+        };
+        newCloudflareWarp = prev.cloudflare-warp.overrideAttrs (old: {
+          version = "2026.6.822.0";
+          src = warpSrc;
+          buildInputs = (old.buildInputs or [ ]) ++ [
+            final.tpm2-tss
+            final.curl
+            final.libsoup_3
+            final.libayatana-appindicator
+            final.ayatana-ido
+            final.libdbusmenu-gtk3
+            final.webkitgtk_4_1
+          ];
+          autoPatchelfIgnoreMissingDeps = (old.autoPatchelfIgnoreMissingDeps or [ ]) ++ [
+            "libjvm.so"
+          ];
+        });
+      in
+      {
+        cloudflare-warp = newCloudflareWarp;
+        cloudflare-warp-headless = prev.cloudflare-warp-headless.overrideAttrs (old: {
+          version = "2026.6.822.0";
+          src = warpSrc;
+          buildInputs = (old.buildInputs or [ ]) ++ [
+            final.tpm2-tss
+            final.curl
+          ];
+          autoPatchelfIgnoreMissingDeps = (old.autoPatchelfIgnoreMissingDeps or [ ]) ++ [
+            "libayatana-appindicator3.so.1"
+            "libayatana-indicator3.so.7"
+            "libayatana-ido3-0.4.so.0"
+            "libdbusmenu-glib.so.4"
+            "libwebkit2gtk-4.1.so.0"
+            "libjavascriptcoregtk-4.1.so.0"
+            "libsoup-3.0.so.0"
+            "libjvm.so"
+          ];
+        });
+      }
+    )
+    (
+      final: prev: {
+        nbfc-linux = prev.nbfc-linux.overrideAttrs (old: {
+          postInstall = (old.postInstall or "") + ''
+            install -Dm644 "${../..}/dotfiles/nbfc/cyborg-15-a12udx.json" \
+              "$out/share/nbfc/configs/Cyborg 15 A12UDX.json"
+          '';
+        });
+      }
+    )
+  ];
+}
+
+=== gentuwu/nix/settings.nix ===
+_: {
+  nix.settings = {
+    experimental-features = [
+      "nix-command"
+      "flakes"
+    ];
+    trusted-users = [ "yari" ];
+    max-jobs = 6;
+    build-cores = 6;
+    max-substitution-jobs = 16;
+    keep-going = true;
+  };
+}
+
+=== gentuwu/nix/substituters.nix ===
+_: {
+  nix.settings = {
+    substituters = [
+      "https://cache.nixos.org"
+      "https://nix-community.cachix.org"
+      "https://attic.xuyh0120.win/lantian"
+      "https://devenv.cachix.org"
+      "https://noctalia.cachix.org"
+    ];
+    trusted-public-keys = [
+      "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+      "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+      "lantian:EeAUQ+W+6r7EtwnmYjeVwx5kOGEBpjlBfPlzGlTNvHc="
+      "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Zm5IX6hLuM="
+      "noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4="
+    ];
+  };
+}
+
+=== gentuwu/nix/trusted-substituters.nix ===
+_: {
+  nix.settings.trusted-substituters = [
+    "https://attic.xuyh0120.win/lantian"
+  ];
+}
+
+=== gentuwu/nixpkgs/config.nix ===
+_: {
+  nixpkgs.config = {
+    allowUnfree = true;
+    permittedInsecurePackages = [
+      "electron-39.8.10"
+      "librewolf-151.0.2-1"
+      "librewolf-unwrapped-151.0.2-1"
+      "pnpm-10.29.2"
+    ];
+    joypixels.acceptLicense = true;
+  };
+}
+
+=== gentuwu/nixpkgs/overlays.nix ===
+_: {
+  nixpkgs.overlays = [
+    (final: prev: {
+      cpplint = prev.cpplint.overridePythonAttrs (_: {
+        doCheck = false;
+        doInstallCheck = false;
+      });
+    })
+  ];
+}
+
+=== gentuwu/nixpkgs/system.nix ===
+_: {
+  nixpkgs.hostPlatform = "x86_64-linux";
+}
+
+=== gentuwu/programs/appimage.nix ===
+{
+  programs.appimage = {
+    enable = true;
+    binfmt = true;
+  };
+}
+
+=== gentuwu/programs/atuin.nix ===
+{
+  programs.atuin = {
+    enable = true;
+    settings = {
+      dialect = "uk";
+      style = "compact";
+      show_preview = true;
+    };
+  };
+}
+
+=== gentuwu/programs/fish.nix ===
+{ pkgs, ... }: {
+  programs.fish = {
+    enable = true;
+    shellInit = ''
+      set -gx PATH "$HOME/.cargo/bin" $PATH
+    '';
+    interactiveShellInit = ''
+      set -gx LIBVIRT_DEFAULT_URI qemu:///system
+      set -g fish_greeting
+      set -gx EZA_COLORS "di=96:fi=37:ex=92:ln=95:or=91:mi=91:su=93:sf=93:wu=93:sg=93:pi=93:so=93:bd=94:cd=94"
+
+      # ─── Shared helpers ───────────────────────────────────
+
+      # Titled box header used by `help`, `gh-pr`, and `vpn-openvpn`.
+      function _box --description 'Print a titled box header'
+        set -l title (string join ' ' $argv)
+        set -l inner 54
+        set -l len (string length -- "$title")
+        if test $len -ge $inner
+          set inner (math "$len + 2")
+        end
+        set -l slack (math "$inner - $len")
+        set -l l (math "floor($slack / 2)")
+        set -l r (math "floor($slack - $l)")
+        printf "%s╭%s╮%s\n" "$_C_CYAN" (string repeat $inner '─') "$_C_RESET"
+        printf "%s│%s %s %s%s│%s\n" "$_C_CYAN" (string repeat $l '─') "$_C_BOLD$title$_C_RESET" (string repeat $r '─') "$_C_CYAN" "$_C_RESET"
+        printf "%s╰%s╯%s\n" "$_C_CYAN" (string repeat $inner '─') "$_C_RESET"
+      end
+
+      function doas --wraps doas
+        if test "$argv" = "!!"
+            command doas (history -n 1)
+        else
+            command doas $argv
+        end
+      end
+      zoxide init fish | source
+
+      function prevd
+        if set -q __last_dir
+          cd "$__last_dir"
+        else
+          echo "$_C_YELLOW ⚠$_C_RESET no previous directory"
+        end
+      end
+
+      function cd
+        set -gx __last_dir "$PWD"
+        builtin cd $argv
+      end
+
+      function gitwho --description 'Set git user name and email'
+        if test (count $argv) -lt 2
+          echo "$_C_RED ✗$_C_RESET usage: gitwho <name> <email>"
+          return 1
+        end
+        git config --global user.name "$argv[1]"
+        git config --global user.email "$argv[2]"
+        echo "$_C_GREEN ✓$_C_RESET git identity set"
+        echo "  $_C_DIM name:$_C_RESET  $argv[1]"
+        echo "  $_C_DIM email:$_C_RESET $argv[2]"
+      end
+
+      function gp --description 'Git add, commit, and push'
+        if test (count $argv) -eq 0
+          echo "$_C_RED ✗$_C_RESET usage: gp <commit message>"
+          return 1
+        end
+        echo "$_C_CYAN ○$_C_RESET staging..."
+        git add .; or return 1
+        set -l changed (git diff --cached --shortstat 2>/dev/null | string match -r '\d+ files? changed' | string match -r '\d+')
+        set -l insertions (git diff --cached --shortstat 2>/dev/null | string match -r '\d+ insertions?' | string match -r '\d+')
+        set -l deletions (git diff --cached --shortstat 2>/dev/null | string match -r '\d+ deletions?' | string match -r '\d+')
+        echo "$_C_CYAN ○$_C_RESET committing..."
+        git commit -m "$argv" 2>&1 | while read -l line
+          if string match -q '*nothing to commit*' $line
+            echo "  $_C_YELLOW ⚠$_C_RESET nothing to commit"
+            return 1
+          end
+          echo "  $line"
+        end; or return 1
+        echo "$_C_CYAN ○$_C_RESET pushing..."
+        git push 2>&1 | while read -l line; echo "  $line"; end
+          and echo "$_C_GREEN ✓$_C_RESET $_C_BOLD pushed!$_C_RESET $_C_DIM($changed files, +$insertions -$deletions)$_C_RESET"
+      end
+
+      function sysupd --description 'Update NixOS flake and rebuild'
+        if test (count $argv) -lt 2
+          echo "$_C_RED ✗$_C_RESET usage: sysupd <config-dir> <hostname>"
+          echo "  $_C_DIM example: sysupd nixos-cfg gentuwu$_C_RESET"
+          return 1
+        end
+        echo "$_C_MAGENTA ── nix flake update ──$_C_RESET"
+        pushd ~/$argv[1]; or return 1
+        nix flake update 2>&1 | while read -l line; echo "  $line"; end; or begin; popd; return 1; end
+        echo ""
+        echo "$_C_MAGENTA ── nh os switch ──$_C_RESET"
+        nh os switch ".#$argv[2]"
+        set -l rc $status
+        popd
+        if test $rc -eq 0
+          echo ""; echo "$_C_GREEN ✓$_C_RESET $_C_BOLD system updated!$_C_RESET"
+        end
+        return $rc
+      end
+
+      function update --description 'Rebuild NixOS without updating flake'
+        if test (count $argv) -lt 2
+          echo "$_C_RED ✗$_C_RESET usage: update <config-dir> <hostname>"
+          echo "  $_C_DIM example: update nixos-cfg gentuwu$_C_RESET"
+          return 1
+        end
+        echo "$_C_CYAN ○$_C_RESET rebuilding..."
+        nh os switch $HOME/$argv[1]#$argv[2]
+        and begin
+          echo "$_C_GREEN ✓$_C_RESET $_C_BOLD system updated!$_C_RESET"
+        end
+      end
+
+      function irc --wraps=weechat; command weechat $argv; end
+
+      function catgirl --wraps=catgirl; command catgirl config $argv; end
+
+      function yt --description 'Download video at the best resolution (yt-dlp)'
+        if test (count $argv) -lt 1
+          echo "$_C_RED ✗$_C_RESET usage: yt <url> [--1080]"
+          return 1
+        end
+        type -q yt-dlp; or begin
+          echo "$_C_RED ✗$_C_RESET yt-dlp not installed"
+          return 1
+        end
+
+        set -l fmt "bv*+ba/b"
+        set -l sort "vcodec:h264,acodec:m4a"
+        set -l urls $argv
+        if contains -- --1080 $argv
+          set fmt "bv*[height<=1080]+ba/b[height<=1080]"
+          set urls (string match -v -- --1080 $urls)
+        end
+
+        echo "$_C_CYAN ○$_C_RESET downloading... $_C_DIM($fmt)$_C_RESET"
+        command yt-dlp -f "$fmt" -S "$sort" --merge-output-format mp4 --embed-metadata $urls
+        and echo "$_C_GREEN ✓$_C_RESET download complete"
+      end
+
+      function vpn-openvpn --description 'Switch ProtonVPN to OpenVPN TCP/443 (looks like HTTPS)'
+        _box "OpenVPN TCP/443"; echo ""
+        echo "$_C_CYAN ○$_C_RESET switching ProtonVPN protocol to OpenVPN TCP..."
+        echo ""; echo "$_C_YELLOW ⚠$_C_RESET this requires the ProtonVPN GUI:"
+        echo "  1. Open ProtonVPN → Settings → Connection"
+        echo "  2. Protocol → OpenVPN (TCP)"
+        echo "  3. Port → 443 (default)"
+        echo "  4. Reconnect"
+        echo ""; echo "$_C_DIM OpenVPN TCP on port 443 wraps traffic in TLS on port 443$_C_RESET"
+        echo "$_C_DIM making it look like HTTPS to basic DPI systems$_C_RESET"
+        echo ""; echo "$_C_DIM note: ProtonVPN Stealth (WireGuard over TLS) is better$_C_RESET"
+        echo "$_C_DIM but requires v4.17.1 which isn't on NixOS yet$_C_RESET"
+        if pgrep -x proton-vpn >/dev/null 2>&1
+          echo ""; echo "$_C_YELLOW ⚠$_C_RESET proton-vpn is running — restart after changing settings"
+        end
+      end
+
+      # ─── Fan control (NBFC) ──────────────────────────────
+      # Manual speed is persisted in ~/.local/state/fanspeed by the
+      # fan-control script; these fish wrappers just call it so both the
+      # niri keybinds (fan-control on PATH) and the terminal share one impl.
+
+      function fanauto --description 'Set fan control to automatic (profile-based)'
+        doas fan-control auto
+        and echo "$_C_GREEN ✓$_C_RESET fan control: $_C_BOLD auto$_C_RESET"
+      end
+
+      function fanboost --description 'Set fans to maximum speed (100%)'
+        doas fan-control boost
+        and echo "$_C_RED ●$_C_RESET fan boost: $_C_BOLD 100%$_C_RESET"
+      end
+
+      function fanup --description 'Increase manual fan speed by 20%'
+        doas fan-control up
+        and echo "$_C_BLUE ▲$_C_RESET fans: $_C_BOLD increased$_C_RESET"
+      end
+
+      function fandown --description 'Decrease manual fan speed by 20%'
+        doas fan-control down
+        and echo "$_C_BLUE ▼$_C_RESET fans: $_C_BOLD decreased$_C_RESET"
+      end
+
+      # ─── DNS mode ──────────────────────────────────────────
+      # Switches the resolution chain:
+      #   filtered   → AdGuardHome (ad/tracker DNS filter + DoH, boot default)
+      #   validated  → dnsmasq → unbound (DNSSEC) → dnscrypt-proxy
+      #   plain      → dnsmasq → 1.1.1.1/9.9.9.9 (unencrypted direct)
+      #   tor        → dnsmasq → tor DNSPort (anonymized)
+      # Backed by the root helper `dns-mode-ctl` (see networking/dns-mode.nix).
+
+      function dns-mode --description 'Switch DNS chain: filtered|validated|plain|tor|status'
+        if test (count $argv) -eq 0
+          echo "$_C_YELLOW ⚠$_C_RESET usage: dns-mode <filtered|validated|plain|tor|status>"
+          echo "  $_C_DIM filtered   AdGuardHome (ad/tracker DNS filter + DoH) — boot default$_C_RESET"
+          echo "  $_C_DIM validated  dnsmasq → unbound (DNSSEC) → dnscrypt-proxy$_C_RESET"
+          echo "  $_C_DIM plain      dnsmasq → 1.1.1.1 / 9.9.9.9 (unencrypted)$_C_RESET"
+          echo "  $_C_DIM tor        dnsmasq → tor DNSPort (anonymized)$_C_RESET"
+          echo "  $_C_DIM status     show current chain + daemons$_C_RESET"
+          return 1
+        end
+        switch $argv[1]
+          case filtered validated plain tor status
+            doas dns-mode-ctl $argv[1]
+          case '*'
+            echo "$_C_RED ✗$_C_RESET unknown mode: $argv[1]"
+            return 1
+        end
+        if test $argv[1] != status
+          echo ""
+          set -l _m (command cat /run/dnsmode/mode 2>/dev/null)
+          if test "$_m" = filtered
+            set _m "filtered (AdGuardHome → DoH)"
+          end
+          if test "$_m" = validated
+            set _m "validated (dnsmasq → unbound → dnscrypt-proxy)"
+          end
+          if test "$_m" = plain
+            set _m "plain (dnsmasq → 1.1.1.1 / 9.9.9.9)"
+          end
+          if test "$_m" = tor
+            set _m "tor (dnsmasq → tor)"
+          end
+          echo "$_C_GREEN ✓$_C_RESET dns-mode: $_C_BOLD$_m$_C_RESET"
+        end
+      end
+
+      # ─── Nix helpers ──────────────────────────────────────
+
+      function net-reset --description 'Flush all iptables and restore defaults'
+        echo "$_C_CYAN ○$_C_RESET flushing iptables..."
+        doas iptables -F; doas iptables -t nat -F; doas iptables -X
+        doas iptables -P OUTPUT ACCEPT
+        doas ip6tables -P OUTPUT ACCEPT 2>/dev/null; or true
+        echo "$_C_CYAN ○$_C_RESET disabling dnssec..."
+        set -l _w (nmcli -t -f DEVICE,TYPE device status 2>/dev/null | string match -r '.*:wifi' | string replace ':wifi' "" | head -1)
+        if test -z "$_w"; set _w wlan0; end
+        doas resolvectl dnssec $_w no
+        set -e ALL_PROXY
+        echo "$_C_GREEN ✓$_C_RESET net reset complete (all protections OFF)"
+      end
+
+      function dev --description 'Enter development shell'
+        if test (count $argv) -lt 2
+          echo "$_C_RED ✗$_C_RESET usage: dev <config-dir> <language>"
+          echo "  $_C_DIM example: dev nixos-cfg rust$_C_RESET"
+          return 1
+        end
+        set -l dir ~/$argv[1]/devenvs/$argv[2]
+        if not test -d "$dir"
+          echo "$_C_RED ✗$_C_RESET unknown devenv: $argv[2]"
+          echo "  $_C_DIM available: $(ls ~/$argv[1]/devenvs/ 2>/dev/null | string join ', ')$_C_RESET"
+          return 1
+        end
+        echo "$_C_CYAN ○$_C_RESET entering $_C_BOLD$argv[2]$_C_RESET devenv..."
+        cd "$dir"; or return 1; devenv shell
+      end
+
+      function gh-pr --description 'GitHub PR quick view (arg = repo, e.g. user/repo)'
+        if test (count $argv) -eq 0
+          echo "$_C_RED ✗$_C_RESET usage: gh-pr <owner/repo>"
+          return 1
+        end
+        _box "open prs: $argv[1]"; echo ""
+        gh pr list --repo $argv[1] --state open --limit 15 2>/dev/null
+        or echo "$_C_RED ✗$_C_RESET failed — is 'gh' authenticated?"
+      end
+
+      function flake-init --description 'Initialize a new NixOS flake'
+        if test (count $argv) -lt 2
+          echo "$_C_RED ✗$_C_RESET usage: flake-init <dir> <hostname>"
+          echo "  $_C_DIM example: flake-init ~/nixos-cfg gentuwu$_C_RESET"
+          return 1
+        end
+        set -l dir $argv[1]; set -l hostname $argv[2]
+        if test -f "$dir/flake.nix"; echo "$_C_YELLOW ⚠$_C_RESET $dir/flake.nix already exists"; return 1; end
+        mkdir -p "$dir/hosts/$hostname"
+        printf '%s\n' '{' '  description = "NixOS system configuration";' \
+          '  inputs = {' '    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";' \
+          '  };' '  outputs = { self, nixpkgs, ... }: {' \
+          "    nixosConfigurations.$hostname = nixpkgs.lib.nixosSystem {" \
+          '      system = "x86_64-linux";' \
+          '      modules = [ ./hosts/'"$hostname"'/configuration.nix ];' \
+          '    };' '  };' '}' > "$dir/flake.nix"
+        printf '%s\n' \
+          '{ config, pkgs, ... }:' '{' \
+          '  imports = [ ./hardware-configuration.nix ];' \
+          '  boot.loader.systemd-boot.enable = true;' \
+          '  boot.loader.efi.canTouchEfiVariables = true;' \
+          '  networking.hostName = "'"$hostname"'";' \
+          '  networking.networkmanager.enable = true;' \
+          '  users.users.yari = { isNormalUser = true; extraGroups = [ "wheel" ]; };' \
+          '  environment.systemPackages = with pkgs; [ vim wget ];' \
+          '  system.stateVersion = "24.05";' '}' \
+          > "$dir/hosts/$hostname/configuration.nix"
+        echo "$_C_GREEN ✓$_C_RESET flake initialized at $dir"
+        echo "  $_C_DIM flake.nix$_C_RESET"
+        echo "  $_C_DIM hosts/$hostname/configuration.nix$_C_RESET"
+        echo ""; echo "$_C_YELLOW ⚠$_C_RESET generate hardware-configuration.nix with:"
+        echo "  $_C_DIM nixos-generate-config --show-hardware-config > $dir/hosts/$hostname/hardware-configuration.nix$_C_RESET"
+      end
+
+      # ─── Help ─────────────────────────────────────────────
+
+      function help --description 'List all custom functions'
+        echo ""; _box "gentuwu command reference"; echo ""
+        echo "$_C_CYAN ── nixos ──$_C_RESET"
+        type -q sysupd    && printf "  $_C_BLUE●$_C_RESET %-14s %s\n" sysupd    "Update flake & rebuild NixOS"
+        type -q update    && printf "  $_C_BLUE●$_C_RESET %-14s %s\n" update    "Rebuild NixOS (no update)"
+        type -q dev       && printf "  $_C_BLUE●$_C_RESET %-14s %s\n" dev       "Enter development shell"
+        type -q flake-init && printf "  $_C_BLUE●$_C_RESET %-14s %s\n" flake-init "Initialize a new NixOS flake"
+        echo ""
+        echo "$_C_CYAN ── git ──$_C_RESET"
+        type -q gp        && printf "  $_C_GREEN●$_C_RESET %-14s %s\n" gp        "Git add, commit, push"
+        type -q gitwho    && printf "  $_C_BLUE●$_C_RESET %-14s %s\n" gitwho    "Set git identity"
+        type -q gh-pr     && printf "  $_C_CYAN●$_C_RESET %-14s %s\n" gh-pr     "GitHub PR list"
+        echo ""
+        echo "$_C_CYAN ── network ──$_C_RESET"
+        type -q net-reset && printf "  $_C_YELLOW●$_C_RESET %-14s %s\n" net-reset "Flush iptables, restore defaults"
+        type -q vpn-openvpn && printf "  $_C_CYAN●$_C_RESET %-14s %s\n" vpn-openvpn "Switch to OpenVPN TCP/443 (info)"
+        type -q dns-mode  && printf "  $_C_CYAN●$_C_RESET %-14s %s\n" dns-mode  "Switch DNS chain (filtered/validated/plain/tor)"
+        echo ""
+        echo "$_C_CYAN ── fans ──$_C_RESET"
+        type -q fanauto   && printf "  $_C_BLUE●$_C_RESET %-14s %s\n" fanauto   "Fan control: auto (profile)"
+        type -q fanboost  && printf "  $_C_RED●$_C_RESET %-14s %s\n" fanboost  "Fan control: max 100%"
+        type -q fanup     && printf "  $_C_BLUE●$_C_RESET %-14s %s\n" fanup     "Fan control: speed +20%"
+        type -q fandown   && printf "  $_C_BLUE●$_C_RESET %-14s %s\n" fandown   "Fan control: speed -20%"
+        echo ""
+        echo "$_C_CYAN ── media ──$_C_RESET"
+        type -q yt        && printf "  $_C_MAGENTA●$_C_RESET %-14s %s\n" yt        "Download video (best res, yt-dlp)"
+        echo ""
+      end
+
+      # ─── Tab Completions ─────────────────────────────────
+
+      complete -c sysupd -d "Update & rebuild NixOS" -r
+      complete -c update -d "Rebuild NixOS" -r
+complete -c dev -d "Enter dev shell" -r
+complete -c gp -d "Git add, commit, push" -r
+      complete -c gitwho -d "Set git user" -r
+      complete -c gh-pr -d "GitHub PR list" -r
+complete -c flake-init -d "Initialize NixOS flake" -r
+complete -c net-reset -d "Flush iptables"
+      complete -c vpn-openvpn -d "Switch to OpenVPN TCP/443"
+      complete -c dns-mode -d "Switch DNS chain" -xa "filtered validated plain tor status"
+      complete -c fanauto -d "Fan control: auto (profile)"
+      complete -c fanboost -d "Fan control: max 100%"
+      complete -c fanup -d "Fan control: speed +20%"
+      complete -c fandown -d "Fan control: speed -20%"
+      complete -c yt -d "Download video (best res)" -r
+      complete -c yt -l 1080 -d "Cap at 1080p"
+      complete -c help -d "List all functions"
+    '';
+    shellAliases = {
+      cat = "bat -p";
+      ls = "eza --icons=auto";
+      ll = "eza -la --icons=auto";
+      lt = "eza -la --icons=auto --tree --level=2";
+      grep = "rg";
+      py = "python3";
+      nv = "doas hx";
+      fm = "nnn -e -H -i -x";
+      rb = "cd ~/nixos-cfg && nh os switch \".#gentuwu\"";
+      gc = "doas nix-collect-garbage -d && doas nix-collect-garbage --delete-old && nix store optimise";
+    };
+    shellAbbrs = {
+      nix = "nix";
+      flake = "nix flake";
+    };
+  };
+}
+
+=== gentuwu/programs/git.nix ===
+{
+  programs.git = {
+    enable = true;
+    lfs.enable = true;
+    config = {
+      user.name = "yari";
+      user.email = "yari@ari.lt";
+      init.defaultBranch = "main";
+      pull.rebase = true;
+      push.autoSetupRemote = true;
+      core.editor = "hx";
+      safe.directory = "/home/yari/nixos-cfg";
+    };
+  };
+}
+
+=== gentuwu/programs/librewolf.nix ===
+{ pkgs, ... }: {
+  programs.firefox = {
+    enable = true;
+    package = pkgs.librewolf;
+
+    policies = {
+      DisableFirefoxStudies = true;
+      DisablePocket = true;
+      DisableTelemetry = true;
+      FirefoxHome = {
+        Pocket = false;
+        Snippets = false;
+      };
+      UserMessaging = {
+        ExtensionRecommendations = false;
+        SkipOnboarding = true;
+      };
+      ExtensionSettings = {
+        "uBlock0@raymondhill.net" = {
+          install_url = "https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi";
+          installation_mode = "force_installed";
+          default_area = "navbar";
+        };
+      };
+      Preferences = {
+        "toolkit.legacyUserProfileCustomizations.stylesheets" = {
+          Value = true;
+          Status = "default";
+        };
+        "ui.systemUsesDarkTheme" = {
+          Value = 1;
+          Status = "default";
+        };
+        "widget.content.allow-gtk-dark-theme" = {
+          Value = true;
+          Status = "default";
+        };
+        "privacy.sanitize.sanitizeOnShutdown" = {
+          Value = false;
+          Status = "default";
+        };
+        "privacy.clearOnShutdown.cookies" = {
+          Value = false;
+          Status = "default";
+        };
+        "privacy.clearOnShutdown.sessions" = {
+          Value = false;
+          Status = "default";
+        };
+        "network.cookie.lifetimePolicy" = {
+          Value = 0;
+          Status = "default";
+        };
+        "network.cookie.lifetime.days" = {
+          Value = 5;
+          Status = "default";
+        };
+        "network.cookie.cookieBehavior" = {
+          Value = 1;
+          Status = "default";
+        };
+        "network.cookie.thirdparty.sessionOnly" = {
+          Value = false;
+          Status = "default";
+        };
+        "identity.fxaccounts.enabled" = {
+          Value = false;
+          Status = "locked";
+        };
+        "privacy.trackingprotection.enabled" = {
+          Value = true;
+          Status = "locked";
+        };
+        "privacy.trackingprotection.socialtracking.enabled" = {
+          Value = true;
+          Status = "locked";
+        };
+        "privacy.donottrackheader.enabled" = {
+          Value = false;
+          Status = "default";
+        };
+        "privacy.globalprivacycontrol.enabled" = {
+          Value = true;
+          Status = "locked";
+        };
+        "media.autoplay.blocking_policy" = {
+          Value = 2;
+          Status = "locked";
+        };
+        "dom.battery.enabled" = {
+          Value = false;
+          Status = "locked";
+        };
+        "dom.vr.enabled" = {
+          Value = false;
+          Status = "locked";
+        };
+        "media.peerconnection.enabled" = {
+          Value = true;
+          Status = "default";
+        };
+        "media.peerconnection.ice.default_address_only" = {
+          Value = false;
+          Status = "default";
+        };
+        "media.peerconnection.ice.no_host" = {
+          Value = false;
+          Status = "default";
+        };
+        "media.peerconnection.ice.proxy_only" = {
+          Value = false;
+          Status = "default";
+        };
+        "media.peerconnection.ice.proxy_only_if_behind_proxy" = {
+          Value = false;
+          Status = "default";
+        };
+        "webgl.disabled" = {
+          Value = true;
+          Status = "default";
+        };
+        "dom.security.https_only_mode" = {
+          Value = true;
+          Status = "locked";
+        };
+        "dom.security.https_only_mode_ever_enabled" = {
+          Value = true;
+          Status = "locked";
+        };
+        "network.http.sendRefererHeader" = {
+          Value = 2;
+          Status = "default";
+        };
+        "network.http.referer.XOriginPolicy" = {
+          Value = 1;
+          Status = "default";
+        };
+        "network.http.referer.XOriginTrimmingPolicy" = {
+          Value = 2;
+          Status = "default";
+        };
+        # Keep DNS on the system chain: trr.mode=5 disables Firefox's plaintext
+        # DoH/first-party resolver, so librewolf honors the sandbox resolv.conf
+        # → AdGuardHome (10.254.0.1) instead of leaking queries to Cloudflare.
+        "network.trr.mode" = {
+          Value = 5;
+          Status = "locked";
+        };
+        "network.trr.uri" = {
+          Value = "";
+          Status = "locked";
+        };
+        "privacy.resistFingerprinting" = {
+          Value = false;
+          Status = "locked";
+        };
+        "privacy.resistFingerprinting.letterboxing" = {
+          Value = false;
+          Status = "locked";
+        };
+        "browser.send_pings" = {
+          Value = false;
+          Status = "locked";
+        };
+        "media.webspeech.recognition.enabled" = {
+          Value = false;
+          Status = "locked";
+        };
+        "media.webspeech.synth.enabled" = {
+          Value = false;
+          Status = "locked";
+        };
+      };
+      SearchEngines = {
+        Add = [
+          {
+            Name = "Omnisearch";
+            URLTemplate = "http://localhost:8087/search?q={searchTerms}";
+            Method = "GET";
+          }
+        ];
+        Default = "Omnisearch";
+      };
+    };
+  };
+
+  environment.etc."ublock-defaults/ublock-settings.json".text = builtins.toJSON {
+    version = 1;
+    userSettings = [
+      [
+        "advancedUserEnabled"
+        "true"
+      ]
+      [
+        "contextMenuEnabled"
+        "true"
+      ]
+      [
+        "dynamicFilteringEnabled"
+        "true"
+      ]
+      [
+        "tooltipsDisabled"
+        "false"
+      ]
+      [
+        "showIconBadge"
+        "true"
+      ]
+    ];
+    selectedFilterLists = [
+      "ublock-filters"
+      "ublock-badware"
+      "ublock-privacy"
+      "ublock-abuse"
+      "ublock-unbreak"
+      "easylist"
+      "easyprivacy"
+      "urlhaus-0"
+      "malware-0"
+      "malware domains"
+      "phishing-0"
+      "easylist-chat"
+      "easylist-newsletters"
+      "easylist-notifications"
+      "easylist-annoyances"
+    ];
+  };
+}
+
+=== gentuwu/programs/niri.nix ===
+_: {
+  programs.niri = {
+    enable = true;
+    withUWSM = true;
+  };
+  services.gnome.gnome-keyring.enable = false;
+}
+
+=== gentuwu/programs/noctalia.nix ===
+{
+  programs.noctalia = {
+    enable = true;
+    systemd.enable = true;
+  };
+}
+
+=== gentuwu/programs/starship.nix ===
+{
+  programs.starship = {
+    enable = true;
+    settings = {
+      format = "$all";
+      palette = "oxocarbon";
+      palettes.oxocarbon = {
+        foreground = "#f2f4f8";
+        background = "#2d2a2e";
+        cyan = "#35bdd8";
+        green = "#addb67";
+        orange = "#f58c52";
+        pink = "#d68cf8";
+        purple = "#b692f6";
+        red = "#ec5f67";
+        yellow = "#f8c555";
+      };
+      character = {
+        success_symbol = "[λ](purple)";
+        error_symbol = "[λ](red)";
+      };
+      directory.style = "cyan";
+      directory.truncation_length = 3;
+      git_branch.style = "purple";
+      git_status.style = "orange";
+      nodejs.disabled = false;
+      rust.style = "orange";
+      python.style = "yellow";
+    };
+  };
+}
+
+=== gentuwu/programs/steam.nix ===
+{
+  programs.steam = {
+    enable = true;
+    remotePlay.openFirewall = false;
+    dedicatedServer.openFirewall = false;
+  };
+  programs.gamemode.enable = true;
+}
+
+=== gentuwu/security/apparmor.nix ===
+_:
+{
+  # AppArmor is DISABLED: it was enabled but shipping zero profiles, so it
+  # provided false confidence rather than isolation. Profile rules are
+  # coarse and easily bypassed (exec inheritance of unconfined parents);
+  # the actual confinement here is firejail (seccomp + namespaces), which
+  # is more precise. Re-enable only with real, tested profiles per app.
+  security.apparmor = {
+    enable = false;
+    killUnconfinedConfinables = false;
+  };
+}
+=== gentuwu/security/clamav.nix ===
+{ pkgs, ... }: {
+  services.clamav = {
+    updater.enable = true;
+    updater.interval = "hourly";
+    daemon.enable = true;
+    scanner = {
+      enable = true;
+      interval = "hourly";
+      scanDirectories = [ "/home/yari/Downloads" ];
+    };
+  };
+
+  systemd.paths.clamav-watch-downloads = {
+    description = "Watch ~/Downloads for new files to scan";
+    wantedBy = [ "multi-user.target" ];
+    pathConfig = {
+      PathChanged = "/home/yari/Downloads";
+      Unit = "clamav-scan-download.service";
+    };
+  };
+  systemd.services.clamav-scan-download = {
+    description = "Scan new download with ClamAV";
+    after = [ "clamav-daemon.service" ];
+    serviceConfig.Type = "oneshot";
+    script = ''
+      OUTPUT=$(${pkgs.clamav}/bin/clamdscan --infected /home/yari/Downloads/ 2>&1)
+      if echo "$OUTPUT" | grep -q "FOUND"; then
+        ${pkgs.libnotify}/bin/notify-send -u critical "Malware detected!" "$(echo "$OUTPUT" | grep FOUND)"
+      fi
+    '';
+  };
+}
+
+=== gentuwu/security/doas.nix ===
+_:
+{
+  security.doas.enable = true;
+  security.doas.extraRules = [
+    {
+      groups = [ "wheel" ];
+      # No `noPass`: any compromise of the (sole) user would otherwise be an
+      # instant, silent path to root. Requiring a password turns a pwned
+      # process into a visible auth event instead.
+      keepEnv = true;
+    }
+  ];
+}
+=== gentuwu/security/dvm.nix ===
+{ config, pkgs, ... }:
+{
+  # ---------------------------------------------------------------------------
+  # dvm: disposable app launcher (Qubes-style "DisposableVM", firejail edition).
+  #
+  #     dvm <command> [args...]   run <command> with a thrown-away HOME inside
+  #                               the browsernet sandbox (no LAN at all)
+  #     dvm-browser               one-off librewolf with a zeroed profile —
+  #                               no cookies, no history, nothing persists
+  #
+  # It is NOT a full VM: it shares your kernel. Use it for "I just want to
+  # open this without it touching my machine", and the libvirtd VMs for real
+  # untrusted binaries. The container qube (virtualisation/quarantine.nix) is
+  # the middle ground for files.
+  # ---------------------------------------------------------------------------
+  environment.systemPackages = [
+    (pkgs.writeShellScriptBin "dvm" ''
+      #!/bin/sh
+      set -eu
+      cmd="''${1:?usage: dvm <command> [args...]}"
+      shift
+      exec firejail \
+        --name="dvm-$(date +%s)-$$" \
+        --hostname="dvm-$UID" \
+        --private \
+        --netns=browsernet \
+        --dns=10.254.0.1 \
+        -- "$cmd" "$@"
+    '')
+    (pkgs.writeShellScriptBin "dvm-browser" ''
+      #!/bin/sh
+      # use the raw librewolf binary (not the firejail-wrapped one) so we don't
+      # double-wrap; the profile comes fresh from --private every time
+      exec dvm ${config.programs.firefox.finalPackage}/bin/librewolf --no-remote "$@"
+    '')
+  ];
+}
+
+=== gentuwu/security/firejail.nix ===
+{ pkgs, config, ... }: {
+  programs.firejail = {
+    enable = true;
+    wrappedBinaries = {
+      # librewolf is the fully sandboxed browser. It joins the pre-built
+      # `browsernet` netVM domain (networking/netvms.nix — a veth with NAT to
+      # the internet), which keeps it isolated from the host net and LAN at the
+      # cost of:
+      #   - DNS resolves on 10.254.0.1 where AdGuardHome listens on the veth,
+      #     so it still gets the adguard filtering/DoH chain (no more plaintext
+      #     1.1.1.1 leak). ublock is force-installed via policies on top.
+      #   - localhost web UIs (AdGuardHome :8080, qBittorrent) are unreachable
+      #     from this profile — open those in qutebrowser.
+      #   - inbound to the sandbox is impossible (NAT, no DNAT), so the old
+      #     `netfilter` line is gone; the host firewall covers the rest.
+      # Other apps wanting isolation pick any netvm domain: `netns <name>` +
+      # `dns 10.254.<idx>.1`.
+      librewolf = {
+        executable = "${config.programs.firefox.finalPackage}/bin/librewolf";
+        profile = pkgs.writeText "librewolf.profile" ''
+          noblacklist /usr/share/pixmaps
+          noblacklist /home/yari/.config/librewolf
+          noblacklist /home/yari/.cache/librewolf
+          noblacklist /home/yari/.local/share/pipewire
+          noblacklist /dev/snd
+          noblacklist /run/user
+          netns browsernet
+          dns 10.254.0.1
+          ipc.namespace
+          machine-id
+          hostname guest-fj-$UID
+          nodvd
+          private-tmp
+          private-dev
+          seccomp
+          caps.drop all
+          tracemode
+        '';
+      };
+
+      # Default browser. No `net` namespace on purpose: qutebrowser carries
+      # no content ad-blocker, so it keeps the adguard DNS chain, and it's
+      # the browser used for localhost web UIs (AdGuardHome, qBittorrent).
+      # Runtime hardening only.
+      qutebrowser = {
+        executable = "${pkgs.qutebrowser}/bin/qutebrowser";
+        profile = pkgs.writeText "qutebrowser.profile" ''
+          noblacklist /home/yari/.config/qutebrowser
+          noblacklist /home/yari/.cache/qutebrowser
+          noblacklist /home/yari/.local/share/pipewire
+          noblacklist /dev/snd
+          noblacklist /run/user
+          ipc.namespace
+          machine-id
+          hostname guest-fj-$UID
+          netfilter
+          nodvd
+          private-tmp
+          private-dev
+          seccomp
+          caps.drop all
+          tracemode
+        '';
+      };
+
+      # PDFs are an untrusted attack surface and need no network: kill it.
+      zathura = {
+        executable = "${pkgs.zathura}/bin/zathura";
+        profile = pkgs.writeText "zathura.profile" ''
+          noblacklist /home/yari/.config/zathura
+          noblacklist /home/yari/.cache/zathura
+          net none
+          ipc.namespace
+          machine-id
+          hostname guest-fj-$UID
+          nodvd
+          private-tmp
+          private-dev
+          seccomp
+          caps.drop all
+          tracemode
+        '';
+      };
+
+      # Media playback (files and streams). Runtime hardening; network kept
+      # (streaming). DNS left to the host chain.
+      mpv = {
+        executable = "${pkgs.mpv}/bin/mpv";
+        profile = pkgs.writeText "mpv.profile" ''
+          noblacklist /home/yari/.config/mpv
+          noblacklist /home/yari/.cache/mpv
+          noblacklist /home/yari/.local/share/mpv
+          noblacklist /home/yari/.local/share/pipewire
+          noblacklist /dev/snd
+          noblacklist /run/user
+          ipc.namespace
+          machine-id
+          hostname guest-fj-$UID
+          nodvd
+          private-tmp
+          private-dev
+          seccomp
+          caps.drop all
+          tracemode
+        '';
+      };
+
+      proton-vpn = {
+        executable = "${pkgs.proton-vpn}/bin/proton-vpn";
+        profile = pkgs.writeText "protonvpn.profile" ''
+          noblacklist /home/yari/.config/Proton
+          noblacklist /home/yari/.local/share/Proton
+          ipc.namespace
+          machine-id
+          netfilter
+          private-tmp
+          private-dev
+          seccomp
+          caps.drop all
+        '';
+      };
+
+      # Email is the #1 human attack surface (phishing + attachment parsing).
+      # Network kept for mail; otherwise hardened like the rest.
+      thunderbird = {
+        executable = "${pkgs.thunderbird}/bin/thunderbird";
+        profile = pkgs.writeText "thunderbird.profile" ''
+          noblacklist /home/yari/.thunderbird
+          noblacklist /home/yari/.config/thunderbird
+          noblacklist /home/yari/.cache/thunderbird
+          noblacklist /home/yari/.local/share/pipewire
+          noblacklist /dev/snd
+          noblacklist /run/user
+          ipc.namespace
+          machine-id
+          hostname guest-fj-$UID
+          netfilter
+          nodvd
+          private-tmp
+          private-dev
+          seccomp
+          caps.drop all
+          tracemode
+        '';
+      };
+
+      # Dev tools execute arbitrary code from repos + extensions; wrap them.
+      # Network kept (registries, language servers, remoting); inbound blocked.
+      vscodium = {
+        executable = "${pkgs.vscodium}/bin/vscodium";
+        profile = pkgs.writeText "vscodium.profile" ''
+          noblacklist /home/yari/.config/VSCodium
+          noblacklist /home/yari/.cache/VSCodium
+          noblacklist /home/yari/.vscode
+          noblacklist /home/yari/.local/share/pipewire
+          noblacklist /dev/snd
+          noblacklist /run/user
+          ipc.namespace
+          machine-id
+          hostname guest-fj-$UID
+          netfilter
+          nodvd
+          private-tmp
+          private-dev
+          seccomp
+          caps.drop all
+          tracemode
+        '';
+      };
+    };
+  };
+}
+
+=== gentuwu/security/hardening.nix ===
+_: {
+  boot.kernel.sysctl = {
+    "fs.suid_dumpable" = 0;
+    "kernel.dmesg_restrict" = 1;
+    "kernel.kptr_restrict" = 2;
+    "kernel.perf_event_paranoid" = 3;
+    "kernel.kexec_load_disabled" = 1;
+    "kernel.unprivileged_bpf_disabled" = 1;
+    "net.core.bpf_jit_harden" = 2;
+    # Low-risk exploitation-surface cuts on top of the cmdline hardening in
+    # boot/kernel.nix (kernel cmdline already covers init_on_*, slab_nomerge,
+    # pti, page_poison, vsyscall=none, debugfs=off).
+    "vm.mmap_min_addr" = 65536; # NULL-page mapping denied
+    "vm.unprivileged_userfaultfd" = 0; # deny the classic state-confusion gadget
+  };
+}
+
+=== gentuwu/security/lockdown.nix ===
+_: {
+  security = {
+    lockKernelModules = true;
+    forcePageTableIsolation = true;
+  };
+  services = {
+    geoclue2.enable = false;
+    avahi.enable = false;
+    # Physical-security: never leave the screen unlocked. Closing the lid or
+    # idling locks instead of leaving the session wide open after a suspend
+    # resume. (Lock is also the right call on an external-monitor laptop where
+    # lid-close shouldn't suspend the machine being used.) logind's lock action
+    # targets the active session locker (niri ext-session-lock / gtklock).
+    logind.settings.Login = {
+      HandleLidSwitch = "lock";
+      HandleLidSwitchExternalPower = "lock";
+      HandleLidSwitchDocked = "lock";
+      IdleAction = "lock";
+      IdleActionSec = "20min";
+    };
+  };
+}
+
+=== gentuwu/security/polkit.nix ===
+_: {
+  security.polkit = {
+    enable = true;
+    extraConfig = ''
+      polkit.addRule(function(action, subject) {
+        if (subject.isInGroup("wheel")) return polkit.Result.YES;
+      });
+    '';
+  };
+}
+
+=== gentuwu/security/usbguard.nix ===
+_: {
+  services.usbguard = {
+    enable = true;
+    rules = ''
+      allow id 1d6b:0002
+      allow id 1d6b:0003
+      allow id 1d6b:0005
+      allow id 30c9:0042
+      allow id 8087:0026
+      allow id 04e8:6860
+      allow id 320f:505b
+      allow id 413c:301a
+    '';
+    implicitPolicyTarget = "block";
+    IPCAllowedUsers = [
+      "root"
+      "yari"
+    ];
+    IPCAllowedGroups = [ "wheel" ];
+  };
+}
+
+=== gentuwu/services/adguardhome.nix ===
+{
+  services.adguardhome = {
+    enable = true;
+    host = "127.0.0.1";
+    port = 8080;
+    mutableSettings = true;
+    settings = {
+      schema_version = 22;
+      dns = {
+        port = 53;
+        # 10.254.0.1 = host end of the browsernet netVM veth
+        # (networking/netvms.nix); binds the sandboxed browsers onto the same
+        # filtered chain so their DNS no longer leaks to a plaintext 1.1.1.1.
+        bind_hosts = [
+          "127.0.0.1"
+          "10.254.0.1"
+        ];
+        upstream_dns = [
+          "https://dns.adguard-dns.com/dns-query"
+          "https://dns.quad9.net/dns-query"
+        ];
+        upstream_dns_file = "";
+        bootstrap_dns = [
+          "94.140.14.14"
+          "9.9.9.9"
+        ];
+        fallback_dns = [ "https://dns.adguard-dns.com/dns-query" ];
+        # ── filtering/hardening (mutableSettings=true means these only seed a
+        # ── FRESH adguard data dir; on the live box paste the filter URLs into
+        # ── the web UI instead unless you want to wipe ~/.local/share/adguardhome)
+        filtering_enabled = true;
+        dnssec = true;
+        disable_ipv6 = true;
+        blocking_ipv4 = "0.0.0.0";
+        blocking_ipv6 = "::";
+        upstream_mode = "load_balance";
+      };
+      # Curated blocklists — drop large/ad-heavy lists if you rely on it too
+      # much: the HaGeZi PRO list is aggressive (also kills newsletter links).
+      filters = [
+        {
+          id = 1;
+          enabled = true;
+          name = "OISD full (ads + trackers)";
+          url = "https://big.oisd.nl/domains";
+        }
+        {
+          id = 2;
+          enabled = true;
+          name = "1Hosts (Xtra)";
+          url = "https://raw.githubusercontent.com/badmojr/1Hosts/master/Xtra/hosts.txt";
+        }
+        {
+          id = 3;
+          enabled = true;
+          name = "AdGuard DNS filter";
+          url = "https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt";
+        }
+        {
+          id = 4;
+          enabled = true;
+          name = "HaGeZi PRO (aggressive)";
+          url = "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/pro.txt";
+        }
+      ];
+    };
+  };
+
+  # AdGuardHome must bind 10.254.0.1 only after the browsernet domain has
+  # created it, otherwise its :53 listener fails to come up.
+  systemd.services.adguardhome = {
+    after = [ "netvm-browsernet.service" ];
+  };
+}
+
+=== gentuwu/services/chrony.nix ===
+_: {
+  # Chrony with Network Time Security (RFC 8915): time sync protected by
+  # certificate-authenticated TLS over UDP 4460. An attacker who can only
+  # spoof/roll plain NTP can quietly skew the clock and break TLS-validity
+  # checks — NTS closes that. All three servers expose NTS.
+  services.chrony = {
+    enable = true;
+    enableNTS = true;
+    servers = [
+      "time.cloudflare.com"
+      "time.google.com"
+      "time.nist.gov"
+    ];
+  };
+}
+
+=== gentuwu/services/cloudflare-warp.nix ===
+{
+  networking.extraHosts = ''
+    104.16.192.82 api.cloudflareclient.com
+    104.16.24.84 api.cloudflareclient.com
+    162.159.197.4
+    2606:4700:102::4
+    162.159.197.3
+    2606:4700:102::3
+  '';
+  services.cloudflare-warp = {
+    enable = true;
+    openFirewall = false;
+  };
+}
+
+=== gentuwu/services/display-manager.nix ===
+{ pkgs, lib, ... }: {
+  services.greetd.enable = false;
+  services.xserver.enable = true;
+  services.libinput.enable = true;
+  services.displayManager.sddm = {
+    enable = true;
+    wayland.enable = true;
+    theme = lib.mkForce "catppuccin-mocha-mauve";
+    settings.Input = {
+      TapToClick = "true";
+      NaturalScroll = "true";
+      AccelSpeed = "0.2";
+    };
+  };
+  environment.systemPackages = [ pkgs.catppuccin-sddm ];
+  services.displayManager.defaultSession = "niri";
+}
+
+=== gentuwu/services/dropbear.nix ===
+{ pkgs, ... }: {
+  networking.firewall.allowedTCPPorts = [ 22 ];
+
+  systemd.services.dropbear = {
+    description = "Dropbear SSH server";
+    after = [ "network.target" ];
+    wantedBy = [ "multi-user.target" ];
+    preStart = ''
+      mkdir -p /etc/dropbear
+      if [ ! -f /etc/dropbear/dropbear_rsa_host_key ]; then
+        ${pkgs.dropbear}/bin/dropbearkey -t rsa -f /etc/dropbear/dropbear_rsa_host_key
+      fi
+    '';
+    serviceConfig = {
+      ExecStart = "${pkgs.dropbear}/bin/dropbear -p 22 -r /etc/dropbear/dropbear_rsa_host_key -F -s -w -K 300";
+      Restart = "on-failure";
+      RestartSec = "5";
+    };
+  };
+
+  services.fail2ban = {
+    enable = true;
+    maxretry = 3;
+    bantime = "1h";
+    bantime-increment = {
+      enable = true;
+      factor = "2";
+      maxtime = "12h";
+      overalljails = true;
+    };
+    ignoreIP = [
+      "127.0.0.1/8"
+      "::1"
+    ];
+    jails = {
+      sshd = {
+        settings = {
+          enabled = true;
+          port = "ssh";
+          filter = "sshd";
+          maxretry = 3;
+          bantime = "1h";
+          findtime = "10m";
+        };
+      };
+    };
+  };
+}
+
+=== gentuwu/services/flatpak.nix ===
+{
+  services.flatpak = {
+    enable = true;
+    remotes = [
+      {
+        name = "flathub";
+        location = "https://flathub.org/repo/flathub.flatpakrepo";
+      }
+    ];
+    packages = [
+      "com.stremio.Stremio"
+      "org.vinegarhq.Sober"
+      "com.spotify.Client"
+      "com.usebottles.bottles"
+    ];
+    overrides.global.Environment = {
+      GTK_THEME = "Oxocarbon";
+      ICON_THEME = "Papirus-Dark";
+    };
+  };
+}
+
+=== gentuwu/services/journald.nix ===
+_:
+{
+  services.journald.extraConfig = ''
+    Seal=true
+    Compress=true
+    SystemMaxUse=256M
+    SystemMaxFileSize=64M
+    MaxRetentionSec=2month
+  '';
+}
+=== gentuwu/services/mpd.nix ===
+{ config, ... }: {
+  services.mpd = {
+    enable = true;
+    user = "yari";
+    dataDir = "/home/yari/.mpd";
+    settings = {
+      music_directory = "/home/yari/Music";
+      audio_output = [
+        {
+          type = "pulse";
+          name = "PulseAudio (via PipeWire)";
+          server = "/run/user/${toString config.users.users.yari.uid}/pulse/native";
+        }
+      ];
+    };
+  };
+
+  systemd.tmpfiles.rules = [
+    "d /home/yari/.mpd 0755 yari users -"
+    "d /home/yari/.mpd/playlists 0755 yari users -"
+    "d /home/yari/.mpd/database 0755 yari users -"
+    "d /home/yari/Music 0755 yari users -"
+  ];
+}
+
+=== gentuwu/services/omnisearch.nix ===
+{ pkgs, inputs, ... }: {
+  services.omnisearch = {
+    enable = true;
+    package = inputs.omnisearch.packages.${pkgs.system}.default.overrideAttrs (old: {
+      nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ pkgs.git ];
+      postPatch = (old.postPatch or "") + ''
+        substituteInPlace src/Main.c --replace-fail "beaker_get_header(\"Host\")" '"localhost"'
+      '';
+    });
+    settings = {
+      server = {
+        # 0.0.0.0 default in the omnisearch ini would expose the search server
+        # to the whole LAN; this service only serves the local user.
+        host = "127.0.0.1";
+        domain = "http://localhost:8087";
+      };
+    };
+  };
+}
+
+=== gentuwu/services/pipewire.nix ===
+{
+  security.rtkit.enable = true;
+  services.pipewire = {
+    enable = true;
+    alsa.enable = true;
+    alsa.support32Bit = true;
+    pulse.enable = true;
+    jack.enable = true;
+    wireplumber.enable = true;
+    extraConfig.pipewire."90-nosuspend" = {
+      "context.properties"."suspend-node-idle-timeout" = -1;
+    };
+    wireplumber.extraConfig."90-norestore" = {
+      "wireplumber.settings"."node.stream.restore-target" = false;
+    };
+  };
+}
+
+=== gentuwu/services/tor.nix ===
+{ lib, pkgs, ... }:
+{
+  # on-demand tor daemon: hosts the `dns-mode tor` DNSPort (5356) and, later,
+  # a transparent-proxy tornet domain. Runs as NixOS's fixed tor uid (35).
+  # NOT started at boot: arti owns the host SOCKS ports (9050/9150).
+  environment.systemPackages = [
+    pkgs.arti
+    pkgs.tor
+    pkgs.obfs4 # lyrebird: obfs4 + webtunnel pluggable transport
+    pkgs.snowflake
+  ];
+
+  services.tor = {
+    enable = true;
+    client.enable = true;
+  };
+  systemd.services.tor.wantedBy = lib.mkForce [ ];
+
+  # arti (rust tor client) holds SOCKS on 9050 + 9150.
+  #
+  # Bridge-ready: the pluggable transports below are wired up but no
+  # bridge lines are active, so arti connects directly (works in the
+  # clear / uncensored networks). To enable bridges, drop a file like
+  #
+  #   [bridges]
+  #   bridges = [
+  #     "Bridge obfs4 <ip>:<port> <fp> cert=... iat-mode=0",
+  #     "Bridge snowflake 192.0.2.1:80 2B280B23E1107BB62ABFC40DDCC882B464A844FC",
+  #   ]
+  #
+  # into /var/lib/arti/arti.d/ and `systemctl restart arti`. Fetch fresh
+  # lines from https://bridges.torproject.org/ when you need them.
+  systemd.services.arti = {
+    description = "Arti Tor proxy (SOCKS on 9050/9150, bridge-ready)";
+    after = [ "network-online.target" ];
+    wants = [ "network-online.target" ];
+    wantedBy = [ "multi-user.target" ];
+    preStart = "mkdir -p /var/lib/arti/arti.d";
+    serviceConfig = {
+      ExecStart = "${pkgs.arti}/bin/arti proxy --config ${pkgs.writeText "arti.toml" ''
+        [application]
+        allow_running_as_root = true
+
+        [proxy]
+        socks_listen = ["127.0.0.1:9050", "127.0.0.1:9150"]
+
+        [bridges]
+        enabled = "auto"
+
+        [[bridges.transports]]
+        protocols = ["obfs4", "webtunnel"]
+        path = "${pkgs.obfs4}/bin/lyrebird"
+        arguments = []
+        run_on_startup = false
+
+        [[bridges.transports]]
+        protocols = ["snowflake"]
+        path = "${pkgs.snowflake}/bin/client"
+        arguments = []
+        run_on_startup = false
+      ''} --config /var/lib/arti/arti.d/";
+      Restart = "on-failure";
+      RestartSec = 3;
+    };
+  };
+}
+
+=== gentuwu/stylix/stylix.nix ===
+{ pkgs, ... }: {
+  stylix = {
+    enable = true;
+    autoEnable = true;
+    image = ../../dotfiles/niri/larp.png;
+    imageScalingMode = "fill";
+    polarity = "dark";
+    cursor = {
+      package = pkgs.bibata-cursors;
+      name = "Bibata-Modern-Ice";
+      size = 24;
+    };
+    fonts = {
+      serif = {
+        package = pkgs.noto-fonts;
+        name = "Noto Serif";
+      };
+      sansSerif = {
+        package = pkgs.noto-fonts;
+        name = "Noto Sans";
+      };
+      monospace = {
+        package = pkgs.monocraft;
+        name = "Monocraft";
+      };
+      emoji = {
+        package = pkgs.noto-fonts-color-emoji;
+        name = "Noto Color Emoji";
+      };
+      sizes = {
+        applications = 12;
+        desktop = 12;
+        popups = 12;
+        terminal = 14;
+      };
+    };
+    opacity = {
+      applications = 1.0;
+      desktop = 1.0;
+      popups = 1.0;
+      terminal = 0.95;
+    };
+    targets.grub.enable = false;
+    targets.limine.enable = false;
+    targets.plymouth.enable = false;
+    targets.qt.enable = false;
+    targets.gtk.enable = false;
+  };
+}
+
+=== gentuwu/system/stateVersion.nix ===
+{
+  config,
+  ...
+}:
+{
+  system.stateVersion = config.system.nixos.release;
+}
+
+=== gentuwu/system/vars.nix ===
+{ lib, ... }:
+let
+  h = import ../../lib/helpers.nix { inherit lib; };
+in
+{
+  options.vars = {
+    name = h.mkStrOpt "yari" "Short name/alias";
+    username = h.mkStrOpt "LazyBev" "Primary username";
+    email = h.mkStrOpt "lazy25yari@proton.me" "Email address";
+    hostname = h.mkStrOpt "gentuwu" "System hostname";
+    theme = h.mkStrOpt "Oxocarbon" "Desktop theme name";
+    gtkTheme = h.mkStrOpt "Oxocarbon" "GTK theme name";
+    cursorTheme = h.mkStrOpt "Bibata-Modern-Ice" "Cursor theme name";
+    cursorSize = h.mkIntOpt 24 "Cursor size";
+    iconTheme = h.mkStrOpt "Papirus-Dark" "Icon theme name";
+    flakeDir = h.mkStrOpt "/home/yari/nixos-cfg" "Path to flake directory";
+    maxJobs = h.mkIntOpt 4 "Maximum Nix build jobs";
+  };
+}
+
+=== gentuwu/systemd/fan-default.nix ===
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
+lib.mkIf config.services.nbfc.enable {
+  systemd.services.fan-default = {
+    description = "Apply fixed manual fan speed";
+    after = [ "nbfc.service" ];
+    wants = [ "nbfc.service" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig.Type = "oneshot";
+    serviceConfig.ExecStartPre = "${pkgs.bash}/bin/bash -c 'for ((i = 0; i < 30; i++)); do [ -S /run/nbfc_service.socket ] && exit 0; ${pkgs.coreutils}/bin/sleep 1; done; exit 1'";
+    serviceConfig.ExecStart = "${pkgs.bash}/bin/bash -c '${pkgs.nbfc-linux}/bin/nbfc set -s ${toString config.services.nbfc.manualSpeed}'";
+  };
+}
+
+=== gentuwu/systemd/ipv6-block.nix ===
+{
+  pkgs,
+  ...
+}:
+{
+  systemd.services.ipv6-block = {
+    description = "Block IPv6 output traffic";
+    after = [ "firewall.service" ];
+    requires = [ "firewall.service" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig.Type = "oneshot";
+    serviceConfig.RemainAfterExit = true;
+    path = [ pkgs.nftables ];
+    preStart = ''
+      nft add table inet ipv6block 2>/dev/null || true
+      nft flush table inet ipv6block 2>/dev/null || true
+      nft add chain inet ipv6block output '{ type filter hook output priority -5; policy accept; }'
+      nft add rule inet ipv6block output oifname "lo" accept
+      nft add rule inet ipv6block output meta nfproto ipv6 drop
+    '';
+    preStop = ''
+      nft delete table inet ipv6block 2>/dev/null || true
+    '';
+  };
+}
+
+=== gentuwu/systemd/tor-hardening.nix ===
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
+let
+  hasTransparentProxy =
+    config.services.tor.enable && (config.services.tor.settings.TransPort or [ ]) != [ ];
+in
+lib.mkIf hasTransparentProxy {
+  systemd.services.tor-hardening = {
+    description = "Tor transparent proxy: redirect all TCP through Tor, DNS leak prevention";
+    after = [
+      "tor.service"
+      "network.target"
+    ];
+    wants = [ "tor.service" ];
+    wantedBy = [ "multi-user.target" ];
+    path = with pkgs; [
+      iptables
+      conntrack-tools
+    ];
+    serviceConfig.Type = "oneshot";
+    serviceConfig.RemainAfterExit = true;
+    script = ''
+      TOR_UID=$(id -u tor)
+      iptables -t nat -N TOR_PROXY 2>/dev/null || iptables -t nat -F TOR_PROXY
+      iptables -t nat -A TOR_PROXY -m owner --uid-owner "$TOR_UID" -j RETURN
+      iptables -t nat -A TOR_PROXY -o lo -j RETURN
+      iptables -t nat -A TOR_PROXY -p tcp --dport 9040 -j RETURN
+      iptables -t nat -A TOR_PROXY -p tcp --dport 9050 -j RETURN
+      iptables -t nat -A TOR_PROXY -p tcp --dport 9051 -j RETURN
+      iptables -t nat -A TOR_PROXY -p tcp -j REDIRECT --to-ports 9040
+      iptables -t nat -A OUTPUT -j TOR_PROXY
+      iptables -t nat -N TOR_DNS 2>/dev/null || iptables -t nat -F TOR_DNS
+      iptables -t nat -A TOR_DNS -m owner --uid-owner "$TOR_UID" -j RETURN
+      iptables -t nat -A TOR_DNS -o lo -j RETURN
+      iptables -t nat -A TOR_DNS -p udp --dport 5353 -j RETURN
+      iptables -t nat -A TOR_DNS -p udp --dport 53 -j REDIRECT --to-ports 5353
+      iptables -t nat -A OUTPUT -j TOR_DNS
+      iptables -N TOR_OUT 2>/dev/null || iptables -F TOR_OUT
+      iptables -A TOR_OUT -m owner --uid-owner "$TOR_UID" -j ACCEPT
+      iptables -A TOR_OUT -o lo -j ACCEPT
+      iptables -A TOR_OUT -p tcp --dport 9040 -j ACCEPT
+      iptables -A TOR_OUT -p tcp --dport 9050 -j ACCEPT
+      iptables -A TOR_OUT -p tcp --dport 9051 -j ACCEPT
+      iptables -A TOR_OUT -p udp --dport 5353 -j ACCEPT
+      iptables -A TOR_OUT -p udp --dport 123 -j ACCEPT
+      iptables -A TOR_OUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+      iptables -A TOR_OUT -j DROP
+      iptables -A OUTPUT -j TOR_OUT
+      ip6tables -P OUTPUT DROP 2>/dev/null || true
+    '';
+    preStop = ''
+      iptables -t nat -D OUTPUT -j TOR_PROXY 2>/dev/null || true
+      iptables -t nat -F TOR_PROXY 2>/dev/null || true
+      iptables -t nat -X TOR_PROXY 2>/dev/null || true
+      iptables -t nat -D OUTPUT -j TOR_DNS 2>/dev/null || true
+      iptables -t nat -F TOR_DNS 2>/dev/null || true
+      iptables -t nat -X TOR_DNS 2>/dev/null || true
+      iptables -D OUTPUT -j TOR_OUT 2>/dev/null || true
+      iptables -F TOR_OUT 2>/dev/null || true
+      iptables -X TOR_OUT 2>/dev/null || true
+      ip6tables -P OUTPUT ACCEPT 2>/dev/null || true
+      conntrack -F 2>/dev/null || true
+    '';
+  };
+}
+
+=== gentuwu/time/timeZone.nix ===
+_: {
+  time.timeZone = "Europe/London";
+}
+
+=== gentuwu/users/users/yari.nix ===
+{ pkgs, ... }: {
+  users.users.yari = {
+    isNormalUser = true;
+    uid = 1000;
+    description = "yari";
+    extraGroups = [
+      "wheel"
+      "networkmanager"
+      "video"
+      "audio"
+      "input"
+    ];
+    shell = pkgs.fish;
+  };
+  users.defaultUserShell = pkgs.fish;
+}
+
+=== gentuwu/virtualisation/default.nix ===
+{
+  virtualisation.libvirtd.enable = true;
+  virtualisation.spiceUSBRedirection.enable = true;
+  programs.virt-manager.enable = true;
+  users.users.yari.extraGroups = [
+    "kvm"
+    "libvirtd"
+  ];
+}
+
+=== gentuwu/virtualisation/docker.nix ===
+{
+  virtualisation.docker.enable = true;
+  users.users.yari.extraGroups = [ "docker" ];
+}
+
+=== gentuwu/virtualisation/quarantine.nix ===
+{
+  pkgs,
+  systemd,
+  lib,
+  ...
+}:
+let
+  share = "/var/lib/quarantine";
+in
+{
+  # ---------------------------------------------------------------------------
+  # quarantine: a headless Qubes-style isolation qube for UNTRUSTED FILES,
+  # built on a NixOS container (systemd-nspawn).
+  #
+  # The container has:
+  #   - its own network namespace, NO NAT, NO default route → no internet,
+  #     no LAN, not even the eyebrows around. The only other end of its veth
+  #     is you, the host, over 10.233.0.0/16.
+  #   - an ephemeral rootfs (every start is a clean slate)
+  #   - /work, writable, bound to host /var/lib/quarantine → that is the ONLY
+  #     channel in/out, used by the `quarantine` helper below.
+  #   - a small offline toolkit: unar, exiftool, file, bsdtar, ffmpeg,
+  #     pdftotext, strings/objdump, hexdump.
+  #
+  # Usage:
+  #     quarantine file.pdf other.zip ...   copies files into /work, prints
+  #                                         exiftool/file/strings/pdftotext
+  #                                         results to the host, one block each
+  #     quarantine-shell                    interactive root shell inside
+  # ---------------------------------------------------------------------------
+
+  containers.quarantine = {
+    autoStart = false;
+    privateNetwork = true;
+    hostAddress = "10.233.0.1";
+    localAddress = "10.233.0.2/16";
+    ephemeral = true;
+
+    bindMounts.${share} = {
+      mountPoint = "/work";
+      isReadOnly = false;
+    };
+
+    config = {
+      environment.systemPackages = with pkgs; [
+        unar
+        exiftool
+        file
+        unzip
+        libarchive
+        ffmpeg
+        poppler-utils
+        binutils
+        hexdump
+        (pkgs.writeShellScriptBin "quarantine-analyze" ''
+          #!/bin/sh
+          # run inside the container on one file, print everything interesting
+          f="''${1:?quarantine-analyze <file>}"
+          echo "══ $f ══"
+          file "$f"
+          exiftool "$f" 2>/dev/null || true
+          case "$f" in
+            *.pdf|*.PDF) pdftotext -layout "$f" - ;;
+            *.zip) unzip -l "$f" ;;
+            *.rar|*.7z|*.tar|*.tar.gz|*.tgz|*.tar.xz|*.tar.zst|*.gz|*.xz)
+              unar -l "$f" 2>/dev/null || bsdtar -tvf "$f" ;;
+            *.docx|*.docm|*.xlsx|*.pptx|*.pptm)
+              echo "-- embedded parts:"; unzip -l "$f" | head -50 ;;
+            *.exe|*.dll|*.bin|*.elf|*.so|*.o|*.iso|*.img)
+              echo "-- strings:"; strings -n 8 -a "$f" | head -200 ;;
+            *)
+              echo "-- first 100 lines:"; head -c 4096 "$f" | strings -n 4 ;;
+          esac
+        '')
+      ];
+      services.getty.autologinUser = "root";
+    };
+  };
+
+  systemd.tmpfiles.rules = [ "d ${share} 0755 root root -" ];
+
+  environment.systemPackages = [
+    (pkgs.writeShellScriptBin "quarantine" ''
+      #!/bin/sh
+      # quarantine <file> [more...]
+      set -e
+      : "''${1:?usage: quarantine <file> [more files...]}"
+      systemctl start container@quarantine.service
+      for f in "$@"; do
+        [ -e "$f" ] || { echo "skipping (not found): $f"; continue; }
+        cp -- "$f" "${share}/$(basename -- "$f")"
+      done
+      machinectl shell quarantine /bin/sh -lc '
+        for f in /work/*; do
+          [ -f "$f" ] && quarantine-analyze "$f"
+        done
+      '
+    '')
+    (pkgs.writeShellScriptBin "quarantine-shell" ''
+      #!/bin/sh
+      systemctl start container@quarantine.service
+      exec machinectl shell quarantine
+    '')
+  ];
+}
+
+=== gentuwu/virtualisation/waydroid.nix ===
+{
+  # Android in an LXC container on Wayland, for the handful of apps that will
+  # never ship for Linux (banking, 2FA, signed-contract viewers, ...).
+  #
+  # The nixpkgs module handles the plumbing: binderfs, the gbinder.conf gift
+  # to /etc, opening waydroid0 in the firewall, and a `waydroid-container`
+  # systemd service. Bring it up with:
+  #
+  #   systemctl start waydroid-container
+  #   waydroid session start
+  #   waydroid show-full-ui
+  #
+  # Caveat for THIS host: waydroid's Android userspace does its own DNS inside
+  # its netns (plaintext upstreams by default), so it bypasses the adguard
+  # chain entirely — app-network isolation, but not DNS filtering. Routing
+  # waydroid DNS through adguard needs a custom netd config + a route to
+  # 10.254.0.1 in the waydroid container; say the word if you want that block.
+  virtualisation.waydroid = {
+    enable = true;
+  };
+}
+
+=== gentuwu/xdg/portal.nix ===
+{
+  pkgs,
+  ...
+}:
+{
+  xdg.portal = {
+    enable = true;
+    xdgOpenUsePortal = true;
+    extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
+    config.common.default = [ "gtk" ];
+  };
+}
+
+=== gentuwu/zram/zram.nix ===
+{
+  zramSwap = {
+    enable = true;
+    algorithm = "zstd";
+    memoryPercent = 50;
+    priority = 100;
+  };
+}
+
+=== lib/helpers.nix ===
+# Centralized NixOS configuration helpers
+# Usage: helpers = import ../lib/helpers.nix { inherit lib; };
+{ lib }:
+
+let
+  # ── Option shorthand ──────────────────────────────────
+
+  mkStrOpt =
+    default: description:
+    lib.mkOption {
+      type = lib.types.str;
+      inherit default description;
+    };
+
+  mkIntOpt =
+    default: description:
+    lib.mkOption {
+      type = lib.types.int;
+      inherit default description;
+    };
+
+  mkPathOpt =
+    default: description:
+    lib.mkOption {
+      type = lib.types.path;
+      inherit default description;
+    };
+
+in
+{
+  inherit
+    mkStrOpt
+    mkIntOpt
+    mkPathOpt
+    ;
+}
+=== yari/files.nix ===
+{
+  config,
+  pkgs,
+  ...
+}:
+let
+  vars = config.vars;
+in
+{
+  hjem.clobberByDefault = true;
+  hjem.users.yari.files = {
+    ".config/niri/config.kdl".source = ../dotfiles/niri/config.kdl;
+    ".config/niri/larp.png".source = ../dotfiles/niri/larp.png;
+    ".config/niri/dark-eva.png".source = ../dotfiles/niri/dark-eva.png;
+    ".local/share/keyclack".source = ../media/keyclack;
+    ".config/niri/matikanefuku.png".source = ../media/Pictures/matikanefuku.png;
+    ".config/alacritty/alacritty.toml".source = ./dotfiles/alacritty.toml;
+    ".config/noctalia/config.toml".source = ./dotfiles/noctalia/config.toml;
+    ".config/noctalia/palettes/dark-eva-mo.json".source = ./dotfiles/noctalia/palettes/dark-eva-mo.json;
+    ".local/state/noctalia/plugins/data/dragged/cider/config.json".source =
+      ./dotfiles/noctalia/cider-config.json;
+    ".config/zellij/config.kdl".source = ../dotfiles/zellij/config.kdl;
+    ".config/bat/config".text = "--theme=\"Catppuccin Mocha\"";
+    ".config/librewolf/librewolf/rlubfwj2.default/chrome/userChrome.css".source =
+      ../dotfiles/librewolf/userChrome.css;
+    ".config/librewolf/sidebery-sidebar.css".source = ../dotfiles/librewolf/sidebery-sidebar.css;
+    ".config/librewolf/librewolf/rlubfwj2.default/user.js".source = ../dotfiles/librewolf/user.js;
+    ".config/librewolf/librewolf/profiles.ini".text = ''
+      [Profile0]
+      Name=default
+      IsRelative=1
+      Path=rlubfwj2.default
+      Default=1
+      [General]
+      StartWithLastProfile=1
+      Version=2
+    '';
+    ".config/qutebrowser/config.py".source = ../dotfiles/qutebrowser/config.py;
+    ".config/qutebrowser/styles/youtube.css".source = ../dotfiles/qutebrowser/styles/youtube.css;
+    ".config/gtk-3.0/settings.ini".text = ''
+      [Settings]
+      gtk-theme-name=${vars.gtkTheme}
+      gtk-icon-theme-name=${vars.iconTheme}
+      gtk-cursor-theme-name=${vars.cursorTheme}
+      gtk-cursor-theme-size=${toString vars.cursorSize}
+      gtk-application-prefer-dark-theme=1
+    '';
+    ".config/gtk-4.0/settings.ini".text = ''
+      [Settings]
+      gtk-theme-name=${vars.gtkTheme}
+      gtk-icon-theme-name=${vars.iconTheme}
+      gtk-cursor-theme-name=${vars.cursorTheme}
+      gtk-cursor-theme-size=${toString vars.cursorSize}
+      gtk-application-prefer-dark-theme=1
+    '';
+    ".config/Kvantum/kvantum.kvconfig".text = "[General]\ntheme=${vars.gtkTheme}\n";
+    ".config/Kvantum/${vars.gtkTheme}/${vars.gtkTheme}.kvconfig".source =
+      ../dotfiles/Kvantum/Oxocarbon/Oxocarbon.kvconfig;
+    ".config/qt6ct/qt6ct.conf".source = ../dotfiles/qt6ct/qt6ct.conf;
+    ".config/qt6ct/colors/Oxocarbon.conf".source = ../dotfiles/qt6ct/colors/Oxocarbon.conf;
+    ".config/gtk-3.0/gtk.css".source = ../dotfiles/gtk/oxocarbon.css;
+    ".config/gtk-4.0/gtk.css".source = ../dotfiles/gtk/oxocarbon.css;
+    ".themes/Oxocarbon/index.theme".source = ../dotfiles/themes/Oxocarbon/index.theme;
+    ".themes/Oxocarbon/gtk-3.0/gtk.css".source = ../dotfiles/gtk/oxocarbon.css;
+    ".themes/Oxocarbon/gtk-4.0/gtk.css".source = ../dotfiles/gtk/oxocarbon.css;
+    ".config/fetch/config".text = ''
+      os
+      host
+      kernel
+      uptime
+      packages
+      shell
+      wm
+      theme
+      icons
+      font
+      cpu
+      gpu
+      memory
+      swap
+      disk
+      ip
+      battery
+      colors
+      label_color=magenta
+      separator=─
+      spin=xy
+      speed=1.0
+    '';
+    ".config/rmpc/config.ron".source = ../dotfiles/rmpc/config.ron;
+    ".config/rmpc/theme.ron".source = ../dotfiles/rmpc/theme.ron;
+    ".config/vesktop/settings.json".source = ../dotfiles/vesktop/vencord-settings.json;
+    "Pictures/BURBER.png".source = ../media/Pictures/BURBER.png;
+    "Pictures/YELLOW_BURBER.png".source = ../media/Pictures/YELLOW_BURBER.png;
+    "Pictures/diinki.png".source = ../media/Pictures/diinki.png;
+    "Pictures/higuruma.jpg".source = ../media/Pictures/higuruma.jpg;
+    "Pictures/jodio.jpg".source = ../media/Pictures/jodio.jpg;
+    "Pictures/manhattan.jpg".source = ../media/Pictures/manhattan.jpg;
+    "Pictures/manhattan2.jpg".source = ../media/Pictures/manhattan2.jpg;
+    "Pictures/matikanefuku.png".source = ../media/Pictures/matikanefuku.png;
+    "Pictures/todo.png".source = ../media/Pictures/todo.png;
+    "Pictures/yellow_burber_wall1.png".source = ../media/Pictures/yellow_burber_wall1.png;
+    ".config/fcitx5/config".source = ../dotfiles/fcitx5/config;
+    ".config/fcitx5/profile".source = ../dotfiles/fcitx5/profile;
+    ".config/fcitx5/conf/chttrans.conf".source = ../dotfiles/fcitx5/conf/chttrans.conf;
+    ".config/fcitx5/conf/keyboard.conf".source = ../dotfiles/fcitx5/conf/keyboard.conf;
+    ".config/fcitx5/conf/notifications.conf".source = ../dotfiles/fcitx5/conf/notifications.conf;
+    ".config/fcitx5/conf/punctuation.conf".source = ../dotfiles/fcitx5/conf/punctuation.conf;
+    ".config/fcitx5/conf/spell.conf".source = ../dotfiles/fcitx5/conf/spell.conf;
+    ".config/catgirl/config".source = ../dotfiles/catgirl/config;
+    ".config/mpv/mpv.conf".text = ''
+      osc=no
+      keepaspect=yes
+      vo=gpu-next
+      gpu-context=wayland
+      hwdec=vaapi
+      profile=gpu-hq
+      watch-later-options-remove=sub-pos
+    '';
+    ".config/hyfetch.json".text = builtins.toJSON {
+      preset = "transbian";
+      mode = "rgb";
+      light_dark = "dark";
+      lightness = 0.65;
+      color_align = {
+        mode = "horizontal";
+        custom_colors = [ ];
+        fore_back = null;
+      };
+      backend = "macchina";
+      args = null;
+      distro = null;
+      pride_month_shown = [ ];
+      pride_month_disable = false;
+    };
+    ".config/mpv/scripts/modernz.lua".source =
+      "${pkgs.mpvScripts.modernz}/share/mpv/scripts/modernz.lua";
+    ".config/mpv/scripts/thumbfast.lua".source =
+      "${pkgs.mpvScripts.thumbfast}/share/mpv/scripts/thumbfast.lua";
+    ".config/helix/config.toml".source = ../dotfiles/helix/config.toml;
+    ".config/helix/languages.toml".source = ../dotfiles/helix/languages.toml;
+    ".config/asm-lsp/.asm-lsp.toml".text =
+      "[default_config]\nassembler = \"fasm\"\ninstruction_set = \"x86/x86-64\"\n[default_config.opts]\ndiagnostics = true\ndefault_diagnostics = true\n";
+  };
+}
+
+=== yari/packages.nix ===
+{
+  pkgs,
+  inputs,
+  ...
+}:
+let
+  ffa = pkgs.fetchFirefoxAddon;
+
+  librewolf-wrapped = pkgs.wrapFirefox pkgs.librewolf-unwrapped {
+    nixExtensions = [
+      (ffa {
+        name = "ublock-origin";
+        url = "https://addons.mozilla.org/firefox/downloads/file/4814095/ublock_origin-1.71.0.xpi";
+        sha256 = "47f788a1fc2c014830b30bb0ef9588615701b98c5265fb19b8cf4ba779849feb";
+      })
+      (ffa {
+        name = "darkreader";
+        url = "https://addons.mozilla.org/firefox/downloads/file/4837294/darkreader-4.9.127.xpi";
+        sha256 = "25f06b10b43270266af63c8d25e01ecf5e497bd2d5411243ee6d19b3869296ad";
+      })
+      (ffa {
+        name = "vimium";
+        url = "https://addons.mozilla.org/firefox/downloads/file/4717567/vimium_ff-2.4.2.xpi";
+        sha256 = "131e2a67580e7ae9125ab19781159e61409fac47b441fc2782aab76396ead196";
+      })
+      (ffa {
+        name = "return-youtube-dislike";
+        url = "https://addons.mozilla.org/firefox/downloads/file/4371820/return_youtube_dislikes-3.0.0.18.xpi";
+        sha256 = "2d33977ce93276537543161f8e05c3612f71556840ae1eb98239284b8f8ba19e";
+      })
+      (ffa {
+        name = "privacy-badger";
+        url = "https://addons.mozilla.org/firefox/downloads/file/4700632/privacy_badger17-2026.2.20.xpi";
+        sha256 = "eea49f1461de5eb00eb17b22b2864b55b54acb577b0360687460fe982633fbd6";
+      })
+      (ffa {
+        name = "tampermonkey";
+        url = "https://addons.mozilla.org/firefox/downloads/file/4797143/tampermonkey-5.5.0.xpi";
+        sha256 = "190031c78dbc5696114835601f2c8e6b855ad1e134df5df278f8fc158c065908";
+      })
+      (ffa {
+        name = "facebook-container";
+        url = "https://addons.mozilla.org/firefox/downloads/file/4451874/facebook_container-2.3.12.xpi";
+        sha256 = "3369bd865877860e6d7d38399d5902b300d3d5737acb2d1342ff5beb1d3780c1";
+      })
+      (ffa {
+        name = "sidebery";
+        url = "https://addons.mozilla.org/firefox/downloads/file/4766841/sidebery-5.5.2.xpi";
+        sha256 = "43e7dd4b8f684e637193d645fbcc94fb182583d24ac9a5b58effc4fb4d9faef2";
+      })
+      (ffa {
+        name = "tabliss";
+        url = "https://addons.mozilla.org/firefox/downloads/file/3940751/tabliss-2.6.0.xpi";
+        sha256 = "de766810f234b1c13ffdb7047ae6cbf06ed79c3d08b51a07e4766fadff089c0f";
+      })
+      (ffa {
+        name = "btroblox";
+        url = "https://addons.mozilla.org/firefox/downloads/file/4555645/btroblox-3.6.21.xpi";
+        sha256 = "87572eb0db7cbfb8572cfecbd356f1c1a354cd7d6df6af8b29e1aa0bd1aa00e5";
+      })
+    ];
+  };
+
+  impala-nm = pkgs.stdenv.mkDerivation {
+    pname = "impala-nm";
+    version = "0.1.8";
+    src = pkgs.fetchurl {
+      url = "https://github.com/aashish-thapa/wlctl/releases/download/v0.1.8/wlctl-x86_64-unknown-linux-musl";
+      sha256 = "0nbzzmxvrxl96qzqnh8d1x25683hk5h0wlazj210b872swnxsi7k";
+    };
+    dontUnpack = true;
+    installPhase = "install -m755 -D $src $out/bin/impala-nm";
+  };
+
+  keyclack = pkgs.writeShellScriptBin "keyclack" ''
+    exec ${pkgs.python3.withPackages (ps: [ ps.evdev ])}/bin/python3 ${./bin/keyclack.py} "$@"
+  '';
+
+  fetch = pkgs.stdenv.mkDerivation {
+    pname = "fetch";
+    version = "2.1.0";
+    src = pkgs.fetchFromGitHub {
+      owner = "areofyl";
+      repo = "fetch";
+      rev = "v2.1.0";
+      hash = "sha256-9ixx7XJcY4ktcN/lUfjvFljvHIEO2ktOebeGgL0ulHg=";
+    };
+    makeFlags = [ "PREFIX=${placeholder "out"}" ];
+    nativeBuildInputs = [ pkgs.makeWrapper ];
+    postInstall = ''
+      wrapProgram $out/bin/fetch --prefix PATH : ${
+        pkgs.lib.makeBinPath [
+          pkgs.fastfetch
+          pkgs.pciutils
+        ]
+      }
+    '';
+    meta.mainProgram = "fetch";
+  };
+
+  # Language server for Hare. Upstream keeps it out of tree from nixpkgs, and
+  # its Makefile leaves HAREFLAGS empty, so we drive harec directly to still
+  # pick up the release + arch flags from hareHook's NIX_HAREFLAGS.
+  hare-lsp = pkgs.stdenv.mkDerivation (finalAttrs: {
+    pname = "hare-lsp";
+    version = "0.2.1";
+    src = pkgs.fetchFromSourcehut {
+      owner = "~whynothugo";
+      repo = "hare-lsp";
+      # Upstream tag is "v0.2.1", but fetchFromSourcehut strips a leading "v"
+      # off `tag`, which 404s against sourcehut's /archive/ endpoint. Pin rev.
+      rev = "ca78f9f79eee38a7b1e112c4616f2333702905f4";
+      hash = "sha256-uXH/T6JOA9cBFcLhCwY0mf4AA/VSrtVEiKfpAiVq2Ik=";
+    };
+
+    nativeBuildInputs = [
+      pkgs.hareHook
+      pkgs.hareThirdParty.hare-json
+    ];
+
+    buildPhase = ''
+      runHook preBuild
+      hare build $NIX_HAREFLAGS -o hare-lsp ./lsp/server/
+      runHook postBuild
+    '';
+
+    installPhase = ''
+      runHook preInstall
+      install -Dm755 hare-lsp -t $out/bin/
+      install -Dm644 LICENCE -t $out/share/licenses/hare-lsp/
+      runHook postInstall
+    '';
+
+    meta = {
+      homepage = "https://git.sr.ht/~whynothugo/hare-lsp/";
+      description = "Language server for the Hare programming language";
+      license = pkgs.lib.licenses.isc;
+      platforms = pkgs.hareHook.meta.platforms;
+      mainProgram = "hare-lsp";
+    };
+  });
+in
+{
+  hjem.users.yari.packages = with pkgs; [
+    (writeShellScriptBin "odin-doc" ''
+      exec xdg-open "$HOME/.local/share/doc/odin/odin-lang.org/docs/index.html"
+    '')
+
+    # ── Browsers ──────────────────────────────────────
+    librewolf-wrapped
+    qutebrowser
+
+    # ── Messaging / Social ────────────────────────────
+    signal-desktop
+    vesktop
+    gajim
+    thunderbird
+    briar-desktop
+    protonmail-desktop
+    weechat
+    catgirl
+
+    # ── Media ─────────────────────────────────────────
+    mpv
+    freetube
+    mpvScripts.modernz
+    mpvScripts.thumbfast
+    alsa-lib
+    pavucontrol
+    playerctl
+    sox
+    ffmpeg
+    imv
+    wf-recorder
+    slurp
+    libresprite
+    protonup-qt
+    rmpc
+
+    # ── Terminal / TUI ────────────────────────────────
+    alacritty
+    networkmanagerapplet
+    nemo
+    motrix
+    qbittorrent
+    bat
+    eza
+    zoxide
+    fzf
+    ripgrep
+    rlwrap
+    zellij
+    btop
+    ncdu
+    tree
+    unar
+    unzip
+    zip
+    nnn
+    nawk
+    glib
+    just
+
+    # ── Development ───────────────────────────────────
+    tinycc
+    clang
+    gcc
+    go
+    lua
+    rustc
+    rustfmt
+    cargo
+    zig
+    hare
+    hare-lsp
+    (writeShellScriptBin "odin" ''
+      export LIBRARY_PATH="${pkgs.raylib}/lib''${LIBRARY_PATH:+:$LIBRARY_PATH}"
+      exec ${pkgs.odin}/bin/odin "$@"
+    '')
+    ols
+    ocaml
+    nasm
+    fasm
+    asm-lsp
+    cmake
+    gnumake
+    bmake
+    vscodium
+    zathura
+    devenv
+    help2man
+    pkg-config
+    opencode
+    gh
+    inputs.nirimod.packages.${pkgs.stdenv.hostPlatform.system}.default
+    (python3.withPackages (ps: [
+      ps.pip
+      ps.psutil
+      ps.textual
+    ]))
+
+    # ── Network / DNS ─────────────────────────────────
+    iw
+    dnsutils
+    ldns
+    ucspi-tcp
+    openssl
+    proton-vpn
+    yt-dlp
+
+    # ── Privacy / Security ────────────────────────────
+    tor-browser
+    arti
+    torsocks
+    proxychains
+    hashcat
+    keepassxc
+    libpcap
+
+    # ── System / Diagnostics ──────────────────────────
+    pciutils
+    usbutils
+    brightnessctl
+    pastel
+    dysk
+    astroterm
+    caligula
+    libnotify
+    killall
+    fastfetch
+    ltrace
+    inotify-tools
+    android-tools
+
+    # ── Misc ──────────────────────────────────────────
+    hyperfine
+    impala-nm
+    fetch
+    keyclack
+    hyprpicker
+    ncurses5
+    xwayland-satellite
+    qt6Packages.qt6ct
+    (pkgs.writeShellScriptBin "artix-games-launcher" ''
+      export GDK_BACKEND=x11
+      exec ${pkgs.artix-games-launcher}/bin/artix-games-launcher "$@"
+    '')
+    obsidian
+    hyfetch
+    macchina
+    (writeShellScriptBin "flstudio" ''
+      export WINEPREFIX="$HOME/.flstudio-wine"
+      export WINEARCH=win64
+
+      if [ ! -d "$WINEPREFIX" ]; then
+        echo "Creating Wine prefix..."
+        wineboot --init
+        echo "Installing fonts and runtimes..."
+        winetricks fontsmooth-rgb gdiplus corefonts vcrun2019
+      fi
+
+      FL_EXE=$(find "$WINEPREFIX/drive_c/Program Files/Image-Line/" -name "FL64.exe" -print -quit 2>/dev/null)
+      if [ -z "$FL_EXE" ]; then
+        echo "FL64.exe not found. Download FL Studio 26.1.3 from https://www.image-line.com/fl-studio/download/"
+        echo "Then run: WINEPREFIX=\"$WINEPREFIX\" wine ~/Downloads/flstudio_win64_26.1.3.exe"
+        exit 1
+      fi
+      exec wine "$FL_EXE" "$@"
+    '')
+  ];
+}
+
+=== yari/session.nix ===
+_: {
+  hjem.users.yari.environment.sessionVariables = {
+    PKG_CONFIG_PATH = "/etc/profiles/per-user/yari/lib/pkgconfig";
+    LIBRARY_PATH = "/etc/profiles/per-user/yari/lib";
+    C_INCLUDE_PATH = "/etc/profiles/per-user/yari/include";
+    CPLUS_INCLUDE_PATH = "/etc/profiles/per-user/yari/include";
+  };
+}
+
+=== yari/system.nix ===
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
+let
+  vars = config.vars;
+in
+{
+  qt.enable = true;
+
+  programs.dconf = {
+    enable = true;
+    profiles.user.databases = [
+      {
+        settings = with lib.gvariant; {
+          "org/gnome/desktop/interface" = {
+            color-scheme = "prefer-dark";
+            gtk-theme = vars.gtkTheme;
+            icon-theme = vars.iconTheme;
+            cursor-theme = vars.cursorTheme;
+            cursor-size = mkInt32 vars.cursorSize;
+            font-name = "Monocraft 10";
+          };
+        };
+      }
+    ];
+  };
+
+  environment.systemPackages = with pkgs; [
+    alejandra
+    nil
+    statix
+    nix-output-monitor
+    nix-init
+    nurl
+    nh
+    (pkgs.catppuccin-gtk.override {
+      variant = "mocha";
+      accents = [ "mauve" ];
+    })
+    (pkgs.catppuccin-kvantum.override {
+      variant = "mocha";
+      accent = "mauve";
+    })
+    pkgs.qt6Packages.qtstyleplugin-kvantum
+    papirus-icon-theme
+    grayjay
+    wl-clipboard
+    helix
+    pkgit
+    wl-mirror
+  ];
+}
+

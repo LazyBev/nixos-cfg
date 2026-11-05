@@ -11,10 +11,14 @@ in
   hjem.users.yari.files = {
     ".config/niri/config.kdl".source = ../dotfiles/niri/config.kdl;
     ".config/niri/larp.png".source = ../dotfiles/niri/larp.png;
+    ".config/niri/dark-eva.png".source = ../dotfiles/niri/dark-eva.png;
     ".local/share/keyclack".source = ../media/keyclack;
     ".config/niri/matikanefuku.png".source = ../media/Pictures/matikanefuku.png;
-    ".config/noctalia/config.toml".source = ../dotfiles/noctalia/config.toml;
-    ".config/alacritty/alacritty.toml".source = ../dotfiles/alacritty/alacritty.toml;
+    ".config/alacritty/alacritty.toml".source = ./dotfiles/alacritty.toml;
+    ".config/noctalia/config.toml".source = ./dotfiles/noctalia/config.toml;
+    ".config/noctalia/palettes/dark-eva-mo.json".source = ./dotfiles/noctalia/palettes/dark-eva-mo.json;
+    ".local/state/noctalia/plugins/data/dragged/cider/config.json".source =
+      ./dotfiles/noctalia/cider-config.json;
     ".config/zellij/config.kdl".source = ../dotfiles/zellij/config.kdl;
     ".config/bat/config".text = "--theme=\"Catppuccin Mocha\"";
     ".config/librewolf/librewolf/rlubfwj2.default/chrome/userChrome.css".source =
