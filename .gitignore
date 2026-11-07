@@ -1,24 +1,11 @@
-# local secrets (sourced by fish update/sysupd before --impure rebuild)
-secrets/
-
-# core dumps (not core.h etc)
-core.[0-9]*
-**/core.[0-9]*
-
-# devenv generated directories
-devenvs/
-
-# build artifacts
-**/_build/
-**/.devenv/
-
-# nix build results
+# Ignore build outputs from performing a nix-build or `nix build` command
 result
 result-*
 
-# macos
-.DS_Store
+# Ignore automatically generated direnv output
+.direnv
 
+<<<<<<< HEAD
 # editor
 *.swp
 *.swo
@@ -30,3 +17,7 @@ media/Videos/wallpaper.mp4
 
 # accidentally-committed nix daemon state / store copy (was ~1.1G)
 /nix/
+=======
+# Ignore NixOS interactive test driver history
+**/.nixos-test-history
+>>>>>>> 84a8250 (New config)

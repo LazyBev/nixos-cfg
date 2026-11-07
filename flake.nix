@@ -1,18 +1,15 @@
 {
-  description = "gentuwu's NixOS configuration";
+  description = "gentuwu's finix configuration";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    flake-parts.url = "github:hercules-ci/flake-parts";
-    easy-hosts.url = "github:tgirlcloud/easy-hosts";
-    niri-nix = {
-      url = "git+https://codeberg.org/BANanaD3V/niri-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    finix.url = "github:finix-community/finix";
+
     hjem = {
       url = "github:feel-co/hjem";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+<<<<<<< HEAD
     nix-flatpak = {
       url = "github:gmodena/nix-flatpak/?ref=latest";
     };
@@ -25,75 +22,55 @@
     };
     stylix = {
       url = "github:nix-community/stylix";
+=======
+    hjem-rum = {
+      url = "github:snugnug/hjem-rum";
+>>>>>>> 84a8250 (New config)
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nirimod = {
       url = "github:srinivasr/nirimod";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nixcord = {
+      url = "github:4evy/nixcord";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
-    inputs@{ flake-parts, nixpkgs, ... }:
-    flake-parts.lib.mkFlake { inherit inputs; } (
-      { config, lib, ... }:
-      let
-        isNix = f: lib.hasSuffix ".nix" f;
-        hostModules = builtins.filter isNix (nixpkgs.lib.filesystem.listFilesRecursive ./gentuwu);
-        homeModules = builtins.filter isNix (nixpkgs.lib.filesystem.listFilesRecursive ./yari);
-      in
-      {
-        imports = [
-          inputs.easy-hosts.flakeModule
-        ];
-
+    inputs@{
+      nixpkgs,
+      finix,
+      hjem,
+      ...
+    }:
+    let
+      pkgs = import nixpkgs {
+        system = "x86_64-linux";
+        overlays = import ./overlays.nix;
         config = {
-          systems = [ "x86_64-linux" ];
-
-          perSystem = { pkgs, ... }: {
-            formatter = pkgs.nixfmt;
-          };
-
-          easy-hosts = {
-            useGlobalPkgs = false;
-
-            shared = {
-              modules = [ ];
-              specialArgs = {
-                inherit inputs;
-                inherit (inputs)
-                  omnisearch
-                  stylix
-                  noctalia
-                  ;
-              };
-            };
-
-            hosts = {
-              gentuwu = {
-                arch = "x86_64";
-                class = "nixos";
-                deployable = true;
-                modules = [
-                  {
-                    _module.args = {
-                      inherit inputs;
-                      inherit (inputs) omnisearch;
-                    };
-                  }
-                  inputs.niri-nix.nixosModules.default
-                  inputs.hjem.nixosModules.default
-                  inputs.nix-flatpak.nixosModules.nix-flatpak
-                  inputs.omnisearch.nixosModules.default
-                  inputs.stylix.nixosModules.stylix
-                  inputs.noctalia.nixosModules.default
-                ]
-                ++ hostModules
-                ++ homeModules;
-              };
-            };
-          };
+          allowUnfree = true;
+          joypixels.acceptLicense = true;
+          permittedInsecurePackages = [
+            "electron-39.8.10"
+            "librewolf-151.0.2-1"
+            "librewolf-unwrapped-151.0.2-1"
+            "pnpm-10.29.2"
+          ];
         };
-      }
-    );
+      };
+    in
+    {
+      nixosConfigurations.gentuwu = finix.lib.finixSystem {
+        inherit (pkgs) lib;
+        modules = [
+          { nixpkgs.pkgs = pkgs; }
+          { _module.args = { inherit inputs; }; }
+          hjem.finixModules.default
+          ./hosts/gentuwu
+        ]
+        ++ builtins.attrValues finix.nixosModules;
+      };
+    };
 }

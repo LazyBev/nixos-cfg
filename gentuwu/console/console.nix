@@ -1,3 +1,0 @@
-_: {
-  console.keyMap = "uk";
-}

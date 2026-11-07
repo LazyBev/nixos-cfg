@@ -121,7 +121,6 @@ environment {
 
 spawn-at-startup "xwayland-satellite"
 spawn-at-startup "fcitx5" "-d"
-spawn-at-startup "noctalia"
 spawn-at-startup "keyclack" "--volume" "1.0"
 
 binds {
@@ -135,21 +134,14 @@ binds {
     Alt+Shift+T      { spawn "nemo"; }
     Alt+E            { spawn "alacritty" "-e" "hx"; }
     Alt+Shift+E      { spawn "codium"; }
+    Alt+Shift+V      { spawn "discord"; }
     Alt+S      { spawn "steam"; }
     Alt+V            { spawn "alacritty" "-e" "btop"; }
-    Alt+Shift+V      { spawn "vesktop"; }
-    Alt+D            { spawn-sh "noctalia msg panel-toggle launcher"; }
-    Alt+Y            { spawn-sh "noctalia msg panel-open control-center notifications"; }
-    Alt+I            { spawn-sh "noctalia msg panel-toggle wallpaper"; }
-    Alt+Z            { spawn-sh "noctalia msg panel-open control-center network"; }
     Alt+Shift+Z      { spawn "alacritty" "-e" "impala-nm"; }
     Alt+Ctrl+M       { spawn "alacritty" "-e" "rmpc"; }
 
-    Mod+Shift+L      { spawn "noctalia:session lock"; }
     Mod+Shift+P      { spawn "shutdown" "now"; }
     Mod+Ctrl+P       { spawn "reboot"; }
-    Alt+U            { spawn-sh "noctalia msg panel-open control-center media"; }
-    Alt+Shift+U      { spawn-sh "noctalia msg bar-toggle"; }
     Alt+Shift+Backspace { quit; }
 
     Alt+X            { screenshot; }
@@ -182,7 +174,6 @@ binds {
     Alt+Shift+Equal  { set-window-height "+10%"; }
 
     Alt+Comma        { consume-window-into-column; }
-    Alt+Period       { spawn-sh "noctalia msg settings-toggle"; }
     Ctrl+Alt+Period  { expel-window-from-column; }
     Alt+BracketLeft  { consume-or-expel-window-left; }
     Alt+BracketRight { consume-or-expel-window-right; }
@@ -216,16 +207,7 @@ binds {
     Alt+Ctrl+Up     { spawn "fanup"; }
     Alt+Ctrl+Down   { spawn "fandown"; }
 
-    XF86AudioRaiseVolume { spawn-sh "noctalia msg volume-up"; }
-    XF86AudioLowerVolume { spawn-sh "noctalia msg volume-down"; }
-    XF86AudioMute        { spawn-sh "noctalia msg volume-mute"; }
-    XF86AudioMicMute     { spawn-sh "noctalia msg mic-mute"; }
-    XF86AudioPlay        { spawn-sh "noctalia msg media play-pause"; }
-    XF86AudioNext        { spawn-sh "noctalia msg media next"; }
-    XF86AudioPrev        { spawn-sh "noctalia msg media previous"; }
 
-    XF86MonBrightnessUp   { spawn-sh "noctalia msg brightness-up"; }
-    XF86MonBrightnessDown { spawn-sh "noctalia msg brightness-down"; }
 }
 
 window-rule {
@@ -234,7 +216,6 @@ window-rule {
 }
 
 window-rule {
-    match app-id="dev.noctalia.Noctalia"
     open-floating true
     default-column-width { fixed 1080; }
     default-window-height { fixed 920; }
